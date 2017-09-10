@@ -2,7 +2,7 @@ package marnikitta.failure.detector;
 
 import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
-import akka.actor.Props;
+import akka.actor.Cancellable;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import akka.japi.pf.ReceiveBuilder;
@@ -15,11 +15,16 @@ import java.util.Set;
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static marnikitta.failure.detector.DetectorAPI.*;
+import static marnikitta.failure.detector.DetectorAPI.AddParticipant;
+import static marnikitta.failure.detector.DetectorAPI.Restore;
+import static marnikitta.failure.detector.DetectorAPI.Suspect;
 
+/**
+ * Eventually strong failure-detector as described in
+ * "Unreliable failure detectors for Reliable Distributed Systems", Chandra and Toueg
+ */
 public class EventuallyStrongDetector extends AbstractActor {
-  private static final long MAX_DELAY = SECONDS.toNanos(5);
-  private static final long HEARTBEAT_DELAY = SECONDS.toNanos(1);
+  public static final long HEARTBEAT_DELAY = SECONDS.toNanos(1);
 
   private final LoggingAdapter LOG = Logging.getLogger(this);
 
@@ -27,95 +32,86 @@ public class EventuallyStrongDetector extends AbstractActor {
   private final TObjectLongMap<ActorRef> currentDelay = new TObjectLongHashMap<>();
   private final Set<ActorRef> cluster = new HashSet<>();
 
-  private final ActorRef subscriber;
+  private final Set<ActorRef> suspected = new HashSet<>();
 
-  private EventuallyStrongDetector(ActorRef subscriber) {
-    this.subscriber = subscriber;
+  private final Cancellable selfHeartbeat = context().system().scheduler().schedule(
+          Duration.Zero(),
+          Duration.create(HEARTBEAT_DELAY, NANOSECONDS),
+          self(),
+          new SendHeartbeat(),
+          context().dispatcher(),
+          self()
+  );
 
-    this.context().system().scheduler().schedule(
-            Duration.Zero(),
-            Duration.create(HEARTBEAT_DELAY, NANOSECONDS),
-            self(),
-            new SendHeartbeat(),
-            context().dispatcher(),
-            self()
-    );
-  }
+  private final Cancellable checkHeartbeats = context().system().scheduler().schedule(
+          Duration.Zero(),
+          Duration.create(HEARTBEAT_DELAY, NANOSECONDS),
+          self(),
+          new CheckHeartbeats(),
+          context().dispatcher(),
+          self()
+  );
 
-  public static Props props(ActorRef subscriber) {
-    return Props.create(EventuallyStrongDetector.class, subscriber);
+  @Override
+  public void postStop() throws Exception {
+    selfHeartbeat.cancel();
+    checkHeartbeats.cancel();
+
+    super.postStop();
   }
 
   @Override
   public Receive createReceive() {
     return ReceiveBuilder.create()
-            .match(Ping.class, this::onPing)
-            .match(Pong.class, this::onPong)
+            .match(Heartbeat.class, this::onHeartbeat)
+            .match(SendHeartbeat.class, this::onSendHeartbeat)
             .match(AddParticipant.class, this::onAddParticipant)
             .match(CheckHeartbeats.class, this::onCheckHeartbeats)
             .build();
   }
 
-  private void onPing(Ping p) {
-    sender().tell(new Pong(), self());
+  private void onSendHeartbeat(SendHeartbeat sendHeartbeat) {
+    for (final ActorRef ref : cluster) {
+      ref.tell(new Heartbeat(), self());
+    }
   }
 
-  private void onPong(final Pong pong) {
+  private void onHeartbeat(Heartbeat heartbeat) {
     if (cluster.contains(sender())) {
-      lastBeat.put(sender(), System.nanoTime());
+      final long now = System.nanoTime();
+
+      if (suspected.contains(sender())) {
+        context().parent().tell(new Restore(sender()), self());
+        currentDelay.put(sender(), currentDelay.get(sender()) + HEARTBEAT_DELAY);
+        suspected.remove(sender());
+      }
+
+      lastBeat.put(sender(), now);
+    }
+  }
+
+  private void onCheckHeartbeats(CheckHeartbeats check) {
+    final long now = System.nanoTime();
+    for (ActorRef ref : cluster) {
+      if (now - lastBeat.get(ref) > currentDelay.get(ref) && !suspected.contains(ref)) {
+        context().parent().tell(new Suspect(ref), self());
+        suspected.add(ref);
+      }
     }
   }
 
   private void onAddParticipant(AddParticipant request) {
     cluster.add(request.participant);
     currentDelay.put(request.participant, HEARTBEAT_DELAY);
-  }
-
-  private void onCheckHeartbeats(CheckHeartbeats check) {
-    for (final ActorRef ref : cluster) {
-      final long delay = System.nanoTime() - lastBeat.get(ref);
-      if (delay > currentDelay.get(ref)) {
-        subscriber.tell(new Suspect(ref), self());
-
-        final long newDelay = delay * 2;
-        if (newDelay > MAX_DELAY) {
-          removeParticipant(ref);
-        } else {
-          currentDelay.put(ref, newDelay);
-        }
-      }
-    }
-  }
-
-  private void removeParticipant(ActorRef ref) {
-    cluster.remove(ref);
-    currentDelay.remove(ref);
-    lastBeat.remove(ref);
-  }
-
-  private static class Ping {
-  }
-
-  private static class Pong {
+    lastBeat.put(request.participant, System.nanoTime() + SECONDS.toNanos(10));
   }
 
   private static class CheckHeartbeats {
-    final ActorRef actorRef;
-    final long delay;
-
-    CheckHeartbeats(ActorRef actorRef, long delay) {
-      this.actorRef = actorRef;
-      this.delay = delay;
-    }
-
-    @Override
-    public String toString() {
-      return "CheckHeartbeats{" + "actorRef=" + actorRef +
-              ", delay=" + delay +
-              '}';
-    }
   }
 
   private static class SendHeartbeat {
+  }
+
+  private static class Heartbeat {
   }
 }
