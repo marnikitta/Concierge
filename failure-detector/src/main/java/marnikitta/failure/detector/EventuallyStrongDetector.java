@@ -15,7 +15,6 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
-import static java.util.concurrent.TimeUnit.MICROSECONDS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -116,7 +115,7 @@ private final LoggingAdapter LOG = Logging.getLogger(this);
   private void onAddParticipant(AddParticipant request) {
     LOG.info("Participant add {}", request.participant);
     cluster.add(request.participant);
-    currentDelay.put(request.participant, HEARTBEAT_DELAY);
+    currentDelay.put(request.participant, HEARTBEAT_DELAY  + HEARTBEAT_DELAY);
     lastBeat.put(request.participant, System.nanoTime() + SECONDS.toNanos(10));
   }
 
