@@ -3,7 +3,7 @@ package marnikitta.failure.detector;
 import akka.actor.ActorRef;
 
 public interface DetectorAPI {
-  class Suspect {
+  class Suspect implements DetectorAPI {
     public final ActorRef theSuspect;
 
     public Suspect(ActorRef theSuspect) {
@@ -16,7 +16,7 @@ public interface DetectorAPI {
     }
   }
 
-  class Restore {
+  class Restore implements DetectorAPI {
     public final ActorRef theSuspect;
 
     public Restore(ActorRef theSuspect) {
@@ -29,7 +29,7 @@ public interface DetectorAPI {
     }
   }
 
-  class AddParticipant {
+  class AddParticipant implements DetectorAPI {
     public final ActorRef participant;
 
     public AddParticipant(ActorRef participant) {

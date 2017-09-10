@@ -3,6 +3,7 @@ package marnikitta.failure.detector;
 import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
 import akka.actor.Cancellable;
+import akka.actor.Props;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import akka.japi.pf.ReceiveBuilder;
@@ -27,13 +28,22 @@ import static marnikitta.failure.detector.DetectorAPI.Suspect;
 public class EventuallyStrongDetector extends AbstractActor {
   public static final long HEARTBEAT_DELAY = SECONDS.toNanos(1);
 
-  private final LoggingAdapter LOG = Logging.getLogger(this);
+private final LoggingAdapter LOG = Logging.getLogger(this);
 
   private final TObjectLongMap<ActorRef> lastBeat = new TObjectLongHashMap<>();
   private final TObjectLongMap<ActorRef> currentDelay = new TObjectLongHashMap<>();
   private final Set<ActorRef> cluster = new HashSet<>();
 
   private final Set<ActorRef> suspected = new HashSet<>();
+
+  private final Cancellable checkHeartbeats = context().system().scheduler().schedule(
+          Duration.Zero(),
+          Duration.create(HEARTBEAT_DELAY, NANOSECONDS),
+          self(),
+          new CheckHeartbeats(),
+          context().dispatcher(),
+          self()
+  );
 
   private final Cancellable selfHeartbeat = context().system().scheduler().schedule(
           Duration.Zero(),
@@ -44,14 +54,9 @@ public class EventuallyStrongDetector extends AbstractActor {
           self()
   );
 
-  private final Cancellable checkHeartbeats = context().system().scheduler().schedule(
-          Duration.Zero(),
-          Duration.create(HEARTBEAT_DELAY, NANOSECONDS),
-          self(),
-          new CheckHeartbeats(),
-          context().dispatcher(),
-          self()
-  );
+  public static Props props() {
+    return Props.create(EventuallyStrongDetector.class);
+  }
 
   @Override
   public void preRestart(Throwable reason, Optional<Object> message) throws Exception {
@@ -72,7 +77,7 @@ public class EventuallyStrongDetector extends AbstractActor {
   }
 
   private void onSendHeartbeat(SendHeartbeat sendHeartbeat) {
-    for (final ActorRef ref : cluster) {
+    for (ActorRef ref : cluster) {
       ref.tell(new Heartbeat(), self());
     }
   }
