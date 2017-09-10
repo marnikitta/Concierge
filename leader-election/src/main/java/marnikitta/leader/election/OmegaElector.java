@@ -31,7 +31,11 @@ public class OmegaElector extends AbstractActor {
             .match(DetectorIdentity.class, this::onDetectorIdentity)
             .match(DetectorAPI.Suspect.class, this::onSuspect)
             .match(DetectorAPI.Restore.class, this::onRestore)
-            .build();
+            .match(
+                    IdentifyDetector.class,
+                    identifyDetector ->
+                            sender().tell(new DetectorIdentity(this.failureDetector), self())
+            ).build();
   }
 
   private void onSuspect(DetectorAPI.Suspect suspect) {
@@ -76,7 +80,6 @@ public class OmegaElector extends AbstractActor {
   }
 
   private static class DetectorIdentity {
-
     public final ActorRef detector;
 
     public DetectorIdentity(ActorRef detector) {
