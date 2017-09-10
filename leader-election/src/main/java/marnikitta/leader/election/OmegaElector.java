@@ -2,6 +2,7 @@ package marnikitta.leader.election;
 
 import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
+import akka.actor.Props;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import akka.japi.pf.ReceiveBuilder;
@@ -23,6 +24,10 @@ public class OmegaElector extends AbstractActor {
 
   private final SortedSet<ActorRef> electors = new TreeSet<>();
   private final Map<ActorRef, ActorRef> failureDetectorToElector = new HashMap<>();
+
+  public static Props props() {
+    return Props.create(OmegaElector.class);
+  }
 
   @Override
   public Receive createReceive() {
@@ -46,10 +51,17 @@ public class OmegaElector extends AbstractActor {
     }
 
     if (electors.first().equals(elector)) {
-      context().parent().tell(new NewLeader(electors.first()), self());
+      electors.remove(elector);
+      if (electors.isEmpty()) {
+        LOG.info("New leader elected {}", null);
+        context().parent().tell(new NewLeader(null), self());
+      } else {
+        LOG.info("New leader elected {}", electors.first());
+        context().parent().tell(new NewLeader(electors.first()), self());
+      }
+    } else {
+      electors.remove(elector);
     }
-
-    electors.remove(elector);
   }
 
   private void onRestore(DetectorAPI.Restore restore) {
@@ -58,22 +70,26 @@ public class OmegaElector extends AbstractActor {
     if (electors.contains(elector)) {
       throw new IllegalStateException();
     }
+    electors.add(elector);
 
-    if (electors.isEmpty() || electors.first().compareTo(elector) > 0) {
+    if (electors.first().equals(elector)) {
+      LOG.info("New leader elected {}", elector);
       context().parent().tell(new NewLeader(elector), self());
     }
 
-    electors.add(elector);
   }
 
   private void onAddParticipant(AddParticipant addParticipant) {
+    LOG.info("Detector identity requested {}", addParticipant);
     addParticipant.participant.tell(new IdentifyDetector(), self());
   }
 
   private void onDetectorIdentity(DetectorIdentity identity) {
+    LOG.info("Detector identity received {}", identity);
     failureDetectorToElector.put(identity.detector, sender());
-    failureDetector.tell(new DetectorAPI.AddParticipant(identity.detector), self());
     onRestore(new DetectorAPI.Restore(identity.detector));
+
+    failureDetector.tell(new DetectorAPI.AddParticipant(identity.detector), self());
   }
 
   private static class IdentifyDetector {

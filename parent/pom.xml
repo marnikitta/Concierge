@@ -17,6 +17,8 @@
         <trove.version>3.0.3</trove.version>
         <jetbrains.version>13.0</jetbrains.version>
 
+        <testng.version>6.10</testng.version>
+
         <java.source.level>1.8</java.source.level>
         <maven-compiler-plugin.version>3.6.1</maven-compiler-plugin.version>
     </properties>
@@ -67,6 +69,14 @@
                 <groupId>org.jetbrains</groupId>
                 <artifactId>annotations</artifactId>
                 <version>${jetbrains.version}</version>
+            </dependency>
+
+
+            <dependency>
+                <groupId>org.testng</groupId>
+                <artifactId>testng</artifactId>
+                <version>${testng.version}</version>
+                <scope>test</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>

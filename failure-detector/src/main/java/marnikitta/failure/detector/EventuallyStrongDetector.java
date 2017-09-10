@@ -15,6 +15,8 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
+import static java.util.concurrent.TimeUnit.MICROSECONDS;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static marnikitta.failure.detector.DetectorAPI.AddParticipant;
@@ -26,7 +28,7 @@ import static marnikitta.failure.detector.DetectorAPI.Suspect;
  * "Unreliable failure detectors for Reliable Distributed Systems", Chandra and Toueg
  */
 public class EventuallyStrongDetector extends AbstractActor {
-  public static final long HEARTBEAT_DELAY = SECONDS.toNanos(1);
+  public static final long HEARTBEAT_DELAY = MILLISECONDS.toNanos(500);
 
 private final LoggingAdapter LOG = Logging.getLogger(this);
 
@@ -37,7 +39,7 @@ private final LoggingAdapter LOG = Logging.getLogger(this);
   private final Set<ActorRef> suspected = new HashSet<>();
 
   private final Cancellable checkHeartbeats = context().system().scheduler().schedule(
-          Duration.Zero(),
+          Duration.create(HEARTBEAT_DELAY, NANOSECONDS),
           Duration.create(HEARTBEAT_DELAY, NANOSECONDS),
           self(),
           new CheckHeartbeats(),
@@ -85,14 +87,18 @@ private final LoggingAdapter LOG = Logging.getLogger(this);
   private void onHeartbeat(Heartbeat heartbeat) {
     if (cluster.contains(sender())) {
       final long now = System.nanoTime();
+      final ActorRef heartbeater = sender();
 
-      if (suspected.contains(sender())) {
-        context().parent().tell(new Restore(sender()), self());
-        currentDelay.put(sender(), currentDelay.get(sender()) + HEARTBEAT_DELAY);
-        suspected.remove(sender());
+      if (suspected.contains(heartbeater)) {
+        context().parent().tell(new Restore(heartbeater), self());
+        currentDelay.put(heartbeater, currentDelay.get(heartbeater) + HEARTBEAT_DELAY);
+        LOG.info("Restored={}, currentDelay={}us", heartbeater, currentDelay.get(heartbeater));
+        suspected.remove(heartbeater);
       }
 
-      lastBeat.put(sender(), now);
+      lastBeat.put(heartbeater, now);
+    } else {
+      unhandled(heartbeat);
     }
   }
 
@@ -100,13 +106,15 @@ private final LoggingAdapter LOG = Logging.getLogger(this);
     final long now = System.nanoTime();
     for (ActorRef ref : cluster) {
       if (now - lastBeat.get(ref) > currentDelay.get(ref) && !suspected.contains(ref)) {
-        context().parent().tell(new Suspect(ref), self());
+        LOG.info("Suspected {}", ref);
         suspected.add(ref);
+        context().parent().tell(new Suspect(ref), self());
       }
     }
   }
 
   private void onAddParticipant(AddParticipant request) {
+    LOG.info("Participant add {}", request.participant);
     cluster.add(request.participant);
     currentDelay.put(request.participant, HEARTBEAT_DELAY);
     lastBeat.put(request.participant, System.nanoTime() + SECONDS.toNanos(10));
