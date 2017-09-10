@@ -11,6 +11,7 @@ import gnu.trove.map.hash.TObjectLongHashMap;
 import scala.concurrent.duration.Duration;
 
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
@@ -53,11 +54,11 @@ public class EventuallyStrongDetector extends AbstractActor {
   );
 
   @Override
-  public void postStop() throws Exception {
+  public void preRestart(Throwable reason, Optional<Object> message) throws Exception {
     selfHeartbeat.cancel();
     checkHeartbeats.cancel();
 
-    super.postStop();
+    super.preRestart(reason, message);
   }
 
   @Override
