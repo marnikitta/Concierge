@@ -21,7 +21,7 @@ public interface PaxosMessages {
     }
   }
 
-  class LastVote<T> implements Comparable<LastVote<?>>{
+  class LastVote<T> implements Comparable<LastVote<?>> {
     public final long txid;
     public final int ballot;
     public final T vote;
@@ -105,5 +105,10 @@ public interface PaxosMessages {
               ", ballot=" + ballot +
               '}';
     }
+  }
+
+  enum SpecialValues {
+    NO_OP,
+    OUTDATED_BALLOT
   }
 }
