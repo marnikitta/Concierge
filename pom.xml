@@ -13,5 +13,6 @@
         <module>parent</module>
         <module>failure-detector</module>
         <module>leader-election</module>
+        <module>paxos</module>
     </modules>
 </project>

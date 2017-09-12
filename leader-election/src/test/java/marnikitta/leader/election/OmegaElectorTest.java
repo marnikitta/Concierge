@@ -25,7 +25,7 @@ public class OmegaElectorTest {
       actors.forEach(part -> a.tell(new ElectorAPI.AddParticipant(part), null));
     }
 
-    for (final ActorRef actor : actors) {
+    for (ActorRef actor : actors) {
       TimeUnit.SECONDS.sleep(10);
       actor.tell(PoisonPill.getInstance(), null);
     }
