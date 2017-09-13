@@ -2,8 +2,10 @@ package marnikitta.concierge.paxos;
 
 import org.jetbrains.annotations.NotNull;
 
-public interface PaxosMessages {
-  class NextBallot {
+public interface PaxosMessage {
+  long txid();
+
+  class NextBallot implements PaxosMessage {
     public final long txid;
     public final int ballot;
 
@@ -19,9 +21,14 @@ public interface PaxosMessages {
               ", ballot=" + ballot +
               '}';
     }
+
+    @Override
+    public long txid() {
+      return txid;
+    }
   }
 
-  class LastVote<T> implements Comparable<LastVote<?>> {
+  class LastVote<T> implements PaxosMessage, Comparable<LastVote<?>> {
     public final long txid;
     public final int ballot;
     public final T vote;
@@ -45,9 +52,14 @@ public interface PaxosMessages {
     public int compareTo(@NotNull LastVote<?> o) {
       return Integer.compare(this.ballot, o.ballot);
     }
+
+    @Override
+    public long txid() {
+      return txid;
+    }
   }
 
-  class BeginBallot<T> {
+  class BeginBallot<T> implements PaxosMessage {
     public final long txid;
     public final int ballot;
     public final T decree;
@@ -66,9 +78,14 @@ public interface PaxosMessages {
               ", vote=" + decree +
               '}';
     }
+
+    @Override
+    public long txid() {
+      return txid;
+    }
   }
 
-  class Voted<T> {
+  class Voted<T> implements PaxosMessage {
     public final long txid;
     public final long ballot;
     public final T vote;
@@ -87,9 +104,14 @@ public interface PaxosMessages {
               ", vote=" + vote +
               '}';
     }
+
+    @Override
+    public long txid() {
+      return txid;
+    }
   }
 
-  class Success {
+  class Success implements PaxosMessage {
     public final long txid;
     public final long ballot;
 
@@ -104,6 +126,11 @@ public interface PaxosMessages {
               "txid=" + txid +
               ", ballot=" + ballot +
               '}';
+    }
+
+    @Override
+    public long txid() {
+      return txid;
     }
   }
 

@@ -2,35 +2,123 @@ package marnikitta.concierge.atomic;
 
 import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
+import akka.event.Logging;
+import akka.event.LoggingAdapter;
 import akka.japi.pf.ReceiveBuilder;
+import gnu.trove.map.TLongObjectMap;
+import gnu.trove.map.hash.TLongObjectHashMap;
+import marnikitta.concierge.paxos.DecreeLeader;
+import marnikitta.concierge.paxos.DecreePriest;
+import marnikitta.concierge.paxos.PaxosAPI;
+import marnikitta.concierge.paxos.PaxosMessage;
+import marnikitta.leader.election.ElectorAPI;
+import marnikitta.leader.election.OmegaElector;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import static marnikitta.concierge.atomic.AtomicBroadcastAPI.Broadcast;
+import static marnikitta.concierge.atomic.AtomicBroadcastAPI.RegisterBroadcasts;
+import static marnikitta.concierge.atomic.BroadcastMessages.ElectorIdentity;
+import static marnikitta.concierge.atomic.BroadcastMessages.IdentifyElector;
+
 public final class AtomicBroadcast extends AbstractActor {
-  private final Set<ActorRef> remoteBroadcasts = new HashSet<>();
+  private final LoggingAdapter LOG = Logging.getLogger(this);
+  private final ActorRef omegaElector = context().actorOf(OmegaElector.props(self()));
+
+  private final Set<ActorRef> broadcasts = new HashSet<>();
   private final Map<ActorRef, ActorRef> electorToBroadcast = new HashMap<>();
+
+  private final TLongObjectMap<ActorRef> decrees = new TLongObjectHashMap<>();
+  private long lastTxid;
+
+  @Nullable
+  private ActorRef currentLeader = null;
 
   @Override
   public Receive createReceive() {
     return ReceiveBuilder.create()
-            .match(AtomicBroadcastAPI.RegisterBroadcasts.class, registerBroadcasts -> {
-              remoteBroadcasts.addAll(registerBroadcasts.broadcasts);
-              remoteBroadcasts.forEach(b -> b.tell(new BroadcastMessages.IdentifyElector(), self()));
+            .match(IdentifyElector.class, i -> sender().tell(new ElectorIdentity(omegaElector), self()))
+            .match(RegisterBroadcasts.class, registerBroadcasts -> {
+              LOG.info("Broadcasts are registered {}", registerBroadcasts);
+              broadcasts.addAll(registerBroadcasts.broadcasts);
+              broadcasts.forEach(b -> b.tell(new IdentifyElector(), self()));
               getContext().become(identifyingElectors());
-            }).build();
+            })
+            .build();
   }
 
   private Receive identifyingElectors() {
     return ReceiveBuilder.create()
-            .match(BroadcastMessages.ElectorIdentity.class, identity -> {
-                      electorToBroadcast.put(identity.elector, sender());
-                      if (electorToBroadcast.values().containsAll(remoteBroadcasts)) {
-                        getContext().become();
-                      }
-                    }
-            ).build();
+            .match(IdentifyElector.class, i -> sender().tell(new ElectorIdentity(omegaElector), self()))
+            .match(ElectorIdentity.class, identity -> {
+              LOG.info("Received elector identity {}", identity);
+              electorToBroadcast.put(identity.elector, sender());
+              if (electorToBroadcast.values().containsAll(broadcasts)) {
+                LOG.info("Received all identities");
+                getContext().become(receivingBroadcasts());
+              }
+            })
+            .build();
+  }
+
+  private Receive receivingBroadcasts() {
+    return ReceiveBuilder.create()
+            .match(IdentifyElector.class, i -> sender().tell(new ElectorIdentity(omegaElector), self()))
+            .match(ElectorAPI.NewLeader.class, leader -> currentLeader = electorToBroadcast.get(leader.leader))
+            .match(Broadcast.class, this::onBroadcast)
+            .match(PaxosMessage.class, this::onPaxosMessage)
+            .match(PaxosAPI.Decide.class, this::onDecide)
+            .build();
+  }
+
+  private void onBroadcast(Broadcast<?> broadcast) {
+    if (currentLeader == null) {
+      LOG.warning("There is no leader yet, abandoning message {}", broadcast);
+      unhandled(broadcast);
+    } else if (self().equals(currentLeader)) {
+      lastTxid++;
+      final ActorRef lead = context().actorOf(DecreeLeader.props(broadcasts, lastTxid));
+      lead.tell(new PaxosAPI.Propose<>(broadcast.value, lastTxid), self());
+    } else {
+      LOG.info("Redirecting message to the current leader, message={}, leader={}", broadcast, currentLeader);
+      currentLeader.tell(broadcast, sender());
+    }
+  }
+
+  private void onPaxosMessage(PaxosMessage paxosMessage) {
+    if (decrees.containsKey(paxosMessage.txid())) {
+      decrees.get(paxosMessage.txid()).tell(paxosMessage, sender());
+    } else {
+      LOG.info("Created priest for txid={}", paxosMessage.txid());
+      final ActorRef priest = context().actorOf(DecreePriest.props(paxosMessage.txid(), self()));
+      priest.tell(paxosMessage, sender());
+    }
+  }
+
+  private void onDecide(PaxosAPI.Decide<?> decide) {
+  }
+}
+
+interface BroadcastMessages {
+  class IdentifyElector {
+  }
+
+  class ElectorIdentity {
+    public final ActorRef elector;
+
+    public ElectorIdentity(ActorRef elector) {
+      this.elector = elector;
+    }
+
+    @Override
+    public String toString() {
+      return "ElectorIdentity{" +
+              "elector=" + elector +
+              '}';
+    }
   }
 }

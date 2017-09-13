@@ -7,12 +7,12 @@ import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import akka.japi.pf.ReceiveBuilder;
 
-import static marnikitta.concierge.paxos.PaxosMessages.BeginBallot;
-import static marnikitta.concierge.paxos.PaxosMessages.LastVote;
-import static marnikitta.concierge.paxos.PaxosMessages.NextBallot;
-import static marnikitta.concierge.paxos.PaxosMessages.SpecialValues;
-import static marnikitta.concierge.paxos.PaxosMessages.Success;
-import static marnikitta.concierge.paxos.PaxosMessages.Voted;
+import static marnikitta.concierge.paxos.PaxosMessage.BeginBallot;
+import static marnikitta.concierge.paxos.PaxosMessage.LastVote;
+import static marnikitta.concierge.paxos.PaxosMessage.NextBallot;
+import static marnikitta.concierge.paxos.PaxosMessage.SpecialValues;
+import static marnikitta.concierge.paxos.PaxosMessage.Success;
+import static marnikitta.concierge.paxos.PaxosMessage.Voted;
 
 public final class DecreePriest extends AbstractActor {
   private final LoggingAdapter LOG = Logging.getLogger(this);

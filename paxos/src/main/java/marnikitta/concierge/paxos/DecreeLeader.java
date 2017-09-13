@@ -16,12 +16,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static marnikitta.concierge.paxos.PaxosMessages.BeginBallot;
-import static marnikitta.concierge.paxos.PaxosMessages.LastVote;
-import static marnikitta.concierge.paxos.PaxosMessages.NextBallot;
-import static marnikitta.concierge.paxos.PaxosMessages.SpecialValues;
-import static marnikitta.concierge.paxos.PaxosMessages.Success;
-import static marnikitta.concierge.paxos.PaxosMessages.Voted;
+import static marnikitta.concierge.paxos.PaxosMessage.BeginBallot;
+import static marnikitta.concierge.paxos.PaxosMessage.LastVote;
+import static marnikitta.concierge.paxos.PaxosMessage.NextBallot;
+import static marnikitta.concierge.paxos.PaxosMessage.SpecialValues;
+import static marnikitta.concierge.paxos.PaxosMessage.Success;
+import static marnikitta.concierge.paxos.PaxosMessage.Voted;
 
 public final class DecreeLeader extends AbstractActor {
   private final LoggingAdapter LOG = Logging.getLogger(this);
