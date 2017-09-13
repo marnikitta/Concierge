@@ -108,7 +108,7 @@ public interface PaxosMessages {
   }
 
   enum SpecialValues {
-    NO_OP,
+    NO_VALUE,
     OUTDATED_BALLOT
   }
 }

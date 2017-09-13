@@ -1,6 +1,7 @@
 package marnikitta.concierge.paxos;
 
 import akka.actor.AbstractActor;
+import akka.actor.ActorRef;
 import akka.actor.Props;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
@@ -15,17 +16,19 @@ import static marnikitta.concierge.paxos.PaxosMessages.Voted;
 
 public final class DecreePriest extends AbstractActor {
   private final LoggingAdapter LOG = Logging.getLogger(this);
+  private final ActorRef subscriber;
   private final long txid;
 
-  private Object vote = SpecialValues.NO_OP;
+  private Object vote = SpecialValues.NO_VALUE;
   private int maxBallot = 0;
 
-  private DecreePriest(long txid) {
+  private DecreePriest(long txid, ActorRef subscriber) {
     this.txid = txid;
+    this.subscriber = subscriber;
   }
 
-  public static Props props(long txid) {
-    return Props.create(DecreePriest.class, txid);
+  public static Props props(long txid, ActorRef subscriber) {
+    return Props.create(DecreePriest.class, txid, subscriber);
   }
 
   @Override
@@ -58,7 +61,7 @@ public final class DecreePriest extends AbstractActor {
             })
             .match(Success.class, success -> {
               LOG.info("Learned {} for txid={}", vote, txid);
-              context().parent().tell(new PaxosAPI.Decide<>(vote), self());
+              subscriber.tell(new PaxosAPI.Decide<>(vote, txid), self());
             })
             .build();
 

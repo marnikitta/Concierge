@@ -29,43 +29,38 @@ public final class DecreeLeader extends AbstractActor {
   private final long txid;
   private final List<ActorRef> priests;
 
-  private final Object proposal;
-
   private DecreeLeader(Collection<ActorRef> priests, long txid) {
-    this(priests, txid, SpecialValues.NO_OP);
-  }
-
-  private DecreeLeader(Collection<ActorRef> priests, long txid, Object proposal) {
     this.txid = txid;
     this.priests = new ArrayList<>(priests);
-    this.proposal = proposal;
   }
 
   public static Props props(Collection<ActorRef> priests, long txid) {
     return Props.create(DecreeLeader.class, priests, txid);
   }
 
-  public static Props props(Collection<ActorRef> priests, long txid, Object proposal) {
-    return Props.create(DecreeLeader.class, priests, txid, proposal);
-  }
+  private Object proposal;
 
   @Override
-  public void preStart() throws Exception {
-    broadcastNextBallot(1);
-    super.preStart();
+  public Receive createReceive() {
+    return ReceiveBuilder.create()
+            .match(
+                    PaxosAPI.Propose.class,
+                    propose -> propose.txid == txid,
+                    propose -> {
+                      LOG.info("Received proposal={}", propose);
+                      this.proposal = propose.value;
+                      broadcastNextBallot(1);
+                    }
+            ).build();
   }
 
   private int ballot = -1;
 
   private void broadcastNextBallot(int ballot) {
+    LOG.info("Broadcasting NextBallot ballot={}, txid={}", ballot, txid);
     this.ballot = ballot;
     priests.forEach(p -> p.tell(new NextBallot(txid, ballot), self()));
     getContext().become(nextBallotSent());
-  }
-
-  @Override
-  public Receive createReceive() {
-    return ReceiveBuilder.create().build();
   }
 
   private final Map<ActorRef, LastVote<?>> lastVotes = new HashMap<>();
@@ -75,17 +70,17 @@ public final class DecreeLeader extends AbstractActor {
   private Receive nextBallotSent() {
     return ReceiveBuilder.create().match(
             LastVote.class,
-            lastVote -> lastVote.ballot == ballot,
+            lastVote -> lastVote.ballot == ballot && lastVote.txid == txid,
             lastVote -> {
               lastVotes.put(sender(), lastVote);
 
               if (lastVotes.size() > priests.size() / 2) {
                 final LastVote<?> winner = Collections.max(lastVotes.values());
 
-                if (winner.vote == SpecialValues.NO_OP) {
+                if (winner.vote == SpecialValues.NO_VALUE) {
                   lockedValue = proposal;
                 } else if (winner.vote == SpecialValues.OUTDATED_BALLOT) {
-                  broadcastNextBallot(1);
+                  broadcastNextBallot(winner.ballot + 1);
                   return;
                 } else {
                   lockedValue = winner.vote;
@@ -103,7 +98,7 @@ public final class DecreeLeader extends AbstractActor {
   private Receive beginBallotSent() {
     return ReceiveBuilder.create().match(
             Voted.class,
-            voted -> ballot == voted.ballot,
+            voted -> voted.ballot == ballot && voted.txid == txid,
             voted -> {
               votedRefs.add(sender());
 
