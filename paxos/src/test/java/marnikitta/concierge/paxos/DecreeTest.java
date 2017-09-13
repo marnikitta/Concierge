@@ -17,7 +17,7 @@ import java.util.stream.Stream;
 
 import static java.util.concurrent.TimeUnit.*;
 
-public class DecreeLeaderTest {
+public class DecreeTest {
   public static final int PRIESTS_COUNT = 17;
   private ActorSystem system;
 
@@ -156,6 +156,6 @@ public class DecreeLeaderTest {
 
     final ActorRef leader = system.actorOf(DecreeLeader.props(allPriests.values(), 1));
     leader.tell(new PaxosAPI.Propose<>("VALUE", 1), ActorRef.noSender());
-    allPriests.keySet().forEach(testKit -> testKit.expectNoMsg(Duration.create(1, SECONDS)));
+    allPriests.keySet().forEach(testKit -> testKit.expectNoMsg(Duration.create(30, MILLISECONDS)));
   }
 }
