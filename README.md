@@ -1,6 +1,6 @@
 # Concierge (aka Yet another Zookeeper)
 
-[![Build Status](https://travis-ci.org/marnikitta/Concierge.svg?branch=master)]
+![Build Status](https://travis-ci.org/marnikitta/Concierge.svg?branch=master)
 
 Concierge is a pet project created to obtain deeper understanding of 
 distributed systems concepts
