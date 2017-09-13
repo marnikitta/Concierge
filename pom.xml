@@ -14,5 +14,6 @@
         <module>failure-detector</module>
         <module>leader-election</module>
         <module>paxos</module>
+        <module>atomic-broadcast</module>
     </modules>
 </project>

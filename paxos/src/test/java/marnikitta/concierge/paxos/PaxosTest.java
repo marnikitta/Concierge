@@ -15,11 +15,12 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static java.util.concurrent.TimeUnit.*;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-public class DecreeTest {
+public class PaxosTest {
   public static final int PRIESTS_COUNT = 17;
   private ActorSystem system;
+  public static final int MINORITY = PRIESTS_COUNT / 2 - 1;
 
   @BeforeSuite
   public void initSystem() {
@@ -33,13 +34,12 @@ public class DecreeTest {
 
   @Test
   public void testSimplePropose() throws Exception {
-    final Stream<TestKit> priestKit = Stream.generate(() -> new TestKit(system)).limit(PRIESTS_COUNT);
+    final Stream<TestKit> priestKits = Stream.generate(() -> new TestKit(system)).limit(PRIESTS_COUNT);
 
-    final Map<TestKit, ActorRef> priests = priestKit
-            .collect(Collectors.toMap(
-                    Function.identity(),
-                    kit -> system.actorOf(DecreePriest.props(1, kit.getRef()))
-            ));
+    final Map<TestKit, ActorRef> priests = priestKits.collect(Collectors.toMap(
+            Function.identity(),
+            kit -> system.actorOf(DecreePriest.props(1, kit.getRef()))
+    ));
 
     final ActorRef leader = system.actorOf(DecreeLeader.props(priests.values(), 1));
     leader.tell(new PaxosAPI.Propose<>("VALUE", 1), ActorRef.noSender());
@@ -49,13 +49,12 @@ public class DecreeTest {
 
   @Test
   public void testDoublePropose() throws Exception {
-    final Stream<TestKit> priestKit = Stream.generate(() -> new TestKit(system)).limit(PRIESTS_COUNT);
+    final Stream<TestKit> priestKits = Stream.generate(() -> new TestKit(system)).limit(PRIESTS_COUNT);
 
-    final Map<TestKit, ActorRef> priests = priestKit
-            .collect(Collectors.toMap(
-                    Function.identity(),
-                    kit -> system.actorOf(DecreePriest.props(1, kit.getRef()))
-            ));
+    final Map<TestKit, ActorRef> priests = priestKits.collect(Collectors.toMap(
+            Function.identity(),
+            kit -> system.actorOf(DecreePriest.props(1, kit.getRef()))
+    ));
 
     final ActorRef leader = system.actorOf(DecreeLeader.props(priests.values(), 1));
     leader.tell(new PaxosAPI.Propose<>("VALUE", 1), ActorRef.noSender());
@@ -70,21 +69,18 @@ public class DecreeTest {
 
   @Test
   public void testMajorityPropose() throws Exception {
-    final int minority = PRIESTS_COUNT / 2 - 1;
-    final Stream<TestKit> majorityKits = Stream.generate(() -> new TestKit(system)).limit(PRIESTS_COUNT - minority);
-    final Stream<TestKit> minorityKits = Stream.generate(() -> new TestKit(system)).limit(minority);
+    final Stream<TestKit> majorityKits = Stream.generate(() -> new TestKit(system)).limit(PRIESTS_COUNT - MINORITY);
+    final Stream<TestKit> minorityKits = Stream.generate(() -> new TestKit(system)).limit(MINORITY);
 
-    final Map<TestKit, ActorRef> majorityPriests = majorityKits
-            .collect(Collectors.toMap(
-                    Function.identity(),
-                    kit -> system.actorOf(DecreePriest.props(1, kit.getRef()))
-            ));
+    final Map<TestKit, ActorRef> majorityPriests = majorityKits.collect(Collectors.toMap(
+            Function.identity(),
+            kit -> system.actorOf(DecreePriest.props(1, kit.getRef()))
+    ));
 
-    final Map<TestKit, ActorRef> minorityPriests = minorityKits
-            .collect(Collectors.toMap(
-                    Function.identity(),
-                    kit -> system.actorOf(DecreePriest.props(1, kit.getRef()))
-            ));
+    final Map<TestKit, ActorRef> minorityPriests = minorityKits.collect(Collectors.toMap(
+            Function.identity(),
+            kit -> system.actorOf(DecreePriest.props(1, kit.getRef()))
+    ));
 
     final Map<TestKit, ActorRef> allPriests = new HashMap<>();
     allPriests.putAll(majorityPriests);
@@ -99,21 +95,18 @@ public class DecreeTest {
 
   @Test
   public void testMajorityDoublePropose() throws Exception {
-    final int minority = PRIESTS_COUNT / 2 - 1;
-    final Stream<TestKit> majorityKits = Stream.generate(() -> new TestKit(system)).limit(PRIESTS_COUNT - minority);
-    final Stream<TestKit> minorityKits = Stream.generate(() -> new TestKit(system)).limit(minority);
+    final Stream<TestKit> majorityKits = Stream.generate(() -> new TestKit(system)).limit(PRIESTS_COUNT - MINORITY);
+    final Stream<TestKit> minorityKits = Stream.generate(() -> new TestKit(system)).limit(MINORITY);
 
-    final Map<TestKit, ActorRef> majorityPriests = majorityKits
-            .collect(Collectors.toMap(
-                    Function.identity(),
-                    kit -> system.actorOf(DecreePriest.props(1, kit.getRef()))
-            ));
+    final Map<TestKit, ActorRef> majorityPriests = majorityKits.collect(Collectors.toMap(
+            Function.identity(),
+            kit -> system.actorOf(DecreePriest.props(1, kit.getRef()))
+    ));
 
-    final Map<TestKit, ActorRef> minorityPriests = minorityKits
-            .collect(Collectors.toMap(
-                    Function.identity(),
-                    kit -> system.actorOf(DecreePriest.props(1, kit.getRef()))
-            ));
+    final Map<TestKit, ActorRef> minorityPriests = minorityKits.collect(Collectors.toMap(
+            Function.identity(),
+            kit -> system.actorOf(DecreePriest.props(1, kit.getRef()))
+    ));
 
     final Map<TestKit, ActorRef> allPriests = new HashMap<>();
     allPriests.putAll(majorityPriests);
@@ -132,21 +125,18 @@ public class DecreeTest {
 
   @Test
   public void testMinorityPropose() throws Exception {
-    final int minority = PRIESTS_COUNT / 2 - 1;
-    final Stream<TestKit> majorityKits = Stream.generate(() -> new TestKit(system)).limit(PRIESTS_COUNT - minority);
-    final Stream<TestKit> minorityKits = Stream.generate(() -> new TestKit(system)).limit(minority);
+    final Stream<TestKit> majorityKits = Stream.generate(() -> new TestKit(system)).limit(PRIESTS_COUNT - MINORITY);
+    final Stream<TestKit> minorityKits = Stream.generate(() -> new TestKit(system)).limit(MINORITY);
 
-    final Map<TestKit, ActorRef> majorityPriests = majorityKits
-            .collect(Collectors.toMap(
-                    Function.identity(),
-                    kit -> system.actorOf(DecreePriest.props(1, kit.getRef()))
-            ));
+    final Map<TestKit, ActorRef> majorityPriests = majorityKits.collect(Collectors.toMap(
+            Function.identity(),
+            kit -> system.actorOf(DecreePriest.props(1, kit.getRef()))
+    ));
 
-    final Map<TestKit, ActorRef> minorityPriests = minorityKits
-            .collect(Collectors.toMap(
-                    Function.identity(),
-                    kit -> system.actorOf(DecreePriest.props(1, kit.getRef()))
-            ));
+    final Map<TestKit, ActorRef> minorityPriests = minorityKits.collect(Collectors.toMap(
+            Function.identity(),
+            kit -> system.actorOf(DecreePriest.props(1, kit.getRef()))
+    ));
 
     final Map<TestKit, ActorRef> allPriests = new HashMap<>();
     allPriests.putAll(majorityPriests);

@@ -2,8 +2,12 @@ package marnikitta.failure.detector;
 
 import akka.actor.ActorRef;
 
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
+
 public interface DetectorAPI {
-  class Suspect implements DetectorAPI {
+  class Suspect {
     public final ActorRef theSuspect;
 
     public Suspect(ActorRef theSuspect) {
@@ -16,7 +20,7 @@ public interface DetectorAPI {
     }
   }
 
-  class Restore implements DetectorAPI {
+  class Restore {
     public final ActorRef theSuspect;
 
     public Restore(ActorRef theSuspect) {
@@ -29,16 +33,18 @@ public interface DetectorAPI {
     }
   }
 
-  class AddParticipant implements DetectorAPI {
-    public final ActorRef participant;
+  class RegisterDetectors {
+    public final Set<ActorRef> detectors;
 
-    public AddParticipant(ActorRef participant) {
-      this.participant = participant;
+    public RegisterDetectors(Collection<ActorRef> detectors) {
+      this.detectors = new HashSet<>(detectors);
     }
 
     @Override
     public String toString() {
-      return "AddParticipant{" + "participant=" + participant + '}';
+      return "RegisterDetectors{" +
+              "detectors=" + detectors +
+              '}';
     }
   }
 }

@@ -14,88 +14,119 @@ import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-import static marnikitta.leader.election.ElectorAPI.AddParticipant;
+import static marnikitta.failure.detector.DetectorAPI.Restore;
+import static marnikitta.failure.detector.DetectorAPI.Suspect;
 import static marnikitta.leader.election.ElectorAPI.NewLeader;
+import static marnikitta.leader.election.ElectorAPI.RegisterElectors;
+import static marnikitta.leader.election.ElectorMessages.DetectorIdentity;
+import static marnikitta.leader.election.ElectorMessages.IdentifyDetector;
 
 public class OmegaElector extends AbstractActor {
   private final LoggingAdapter LOG = Logging.getLogger(this);
 
-  private final ActorRef failureDetector = context().actorOf(EventuallyStrongDetector.props(), "detector");
+  private final ActorRef subscriber; private final ActorRef failureDetector = context().actorOf(EventuallyStrongDetector.props(), "detector");
 
   private final SortedSet<ActorRef> electors = new TreeSet<>();
   private final Map<ActorRef, ActorRef> failureDetectorToElector = new HashMap<>();
 
-  public static Props props() {
-    return Props.create(OmegaElector.class);
+  private OmegaElector(ActorRef subscriber) {
+    this.subscriber = subscriber;
+  }
+
+  public static Props props(ActorRef subscriber) {
+    return Props.create(OmegaElector.class, subscriber);
   }
 
   @Override
   public Receive createReceive() {
     return ReceiveBuilder.create()
-            .match(AddParticipant.class, this::onAddParticipant)
-            .match(DetectorIdentity.class, this::onDetectorIdentity)
-            .match(DetectorAPI.Suspect.class, this::onSuspect)
-            .match(DetectorAPI.Restore.class, this::onRestore)
-            .match(
-                    IdentifyDetector.class,
-                    identifyDetector ->
-                            sender().tell(new DetectorIdentity(this.failureDetector), self())
-            ).build();
+            .match(IdentifyDetector.class, identifyDetector ->
+                    sender().tell(new DetectorIdentity(this.failureDetector), self()))
+            .match(RegisterElectors.class, register -> {
+              if (register.participant.isEmpty()) {
+                throw new IllegalArgumentException("Participants shouldn't be empty");
+              }
+              electors.addAll(register.participant);
+              electors.forEach(e -> e.tell(new IdentifyDetector(), self()));
+
+              LOG.info("Electors registered");
+              getContext().become(identifyingDetectors());
+            })
+            .build();
   }
 
-  private void onSuspect(DetectorAPI.Suspect suspect) {
+  private Receive identifyingDetectors() {
+    return ReceiveBuilder.create()
+            .match(IdentifyDetector.class, identifyDetector ->
+                    sender().tell(new DetectorIdentity(this.failureDetector), self()))
+            .match(DetectorIdentity.class, identity -> {
+              LOG.info("Received identity {}", identity);
+              failureDetectorToElector.put(identity.detector, sender());
+
+              if (failureDetectorToElector.values().containsAll(electors)) {
+                LOG.info("All electors are registered");
+                failureDetector.tell(new DetectorAPI.RegisterDetectors(failureDetectorToElector.keySet()), self());
+
+                LOG.info("New leader is elected {}", electors.first());
+                subscriber.tell(new NewLeader(electors.first()), sender());
+
+                getContext().become(electorsRegistered());
+              }
+            })
+            .build();
+  }
+
+  private Receive electorsRegistered() {
+    return ReceiveBuilder.create()
+            .match(IdentifyDetector.class, identifyDetector ->
+                    sender().tell(new DetectorIdentity(this.failureDetector), self()))
+            .match(Suspect.class, this::onSuspect)
+            .match(Restore.class, this::onRestore)
+            .build();
+  }
+
+  private void onSuspect(Suspect suspect) {
     final ActorRef elector = failureDetectorToElector.get(suspect.theSuspect);
 
     if (!electors.contains(elector)) {
-      throw new IllegalStateException();
+      throw new IllegalStateException("Double suspecting, probably incorrect failure detector implementation");
     }
 
     if (electors.first().equals(elector)) {
       electors.remove(elector);
       if (electors.isEmpty()) {
         LOG.info("New leader elected {}", null);
-        context().parent().tell(new NewLeader(null), self());
+        subscriber.tell(new NewLeader(null), self());
       } else {
         LOG.info("New leader elected {}", electors.first());
-        context().parent().tell(new NewLeader(electors.first()), self());
+        subscriber.tell(new NewLeader(electors.first()), self());
       }
     } else {
       electors.remove(elector);
     }
   }
 
-  private void onRestore(DetectorAPI.Restore restore) {
+  private void onRestore(Restore restore) {
     final ActorRef elector = failureDetectorToElector.get(restore.theSuspect);
 
     if (electors.contains(elector)) {
-      throw new IllegalStateException();
+      throw new IllegalStateException("Double restoring, probably incorrect failure detector implementation");
     }
+
     electors.add(elector);
 
     if (electors.first().equals(elector)) {
       LOG.info("New leader elected {}", elector);
-      context().parent().tell(new NewLeader(elector), self());
+      subscriber.tell(new NewLeader(elector), self());
     }
+  }
+}
 
+interface ElectorMessages {
+  class IdentifyDetector {
   }
 
-  private void onAddParticipant(AddParticipant addParticipant) {
-    LOG.info("Detector identity requested {}", addParticipant);
-    addParticipant.participant.tell(new IdentifyDetector(), self());
-  }
-
-  private void onDetectorIdentity(DetectorIdentity identity) {
-    LOG.info("Detector identity received {}", identity);
-    failureDetectorToElector.put(identity.detector, sender());
-    onRestore(new DetectorAPI.Restore(identity.detector));
-
-    failureDetector.tell(new DetectorAPI.AddParticipant(identity.detector), self());
-  }
-
-  private static class IdentifyDetector {
-  }
-
-  private static class DetectorIdentity {
+  class DetectorIdentity {
     public final ActorRef detector;
 
     public DetectorIdentity(ActorRef detector) {
