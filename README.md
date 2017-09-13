@@ -12,6 +12,7 @@ distributed systems concepts
 3. __[✔]__ Implement Paxos consensus algorithm
 4. __[ ]__ Build atomic broadcast on top of the consensus layer
 5. __[ ]__ Deliver ledger to the newly elected leader
-6. __[ ]__ Implement KV-storage using state-machine replication
-7. __[ ]__ Add sessions, ephemeral nodes...
-8. __[ ]__ Make leader election primitive aware of the ledger length
+6. __[ ]__ Upgrade algorithms from fail-stop to fail-restore model
+7. __[ ]__ Implement KV-storage using state-machine replication
+8. __[ ]__ Add sessions, ephemeral nodes...
+9. __[ ]__ Make leader election primitive aware of the ledger length
