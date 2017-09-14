@@ -6,6 +6,7 @@ import akka.actor.Props;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import akka.japi.pf.ReceiveBuilder;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -23,22 +24,23 @@ import static marnikitta.concierge.paxos.PaxosMessage.SpecialValues;
 import static marnikitta.concierge.paxos.PaxosMessage.Success;
 import static marnikitta.concierge.paxos.PaxosMessage.Voted;
 
-public final class DecreeLeader extends AbstractActor {
+public final class DecreePresident extends AbstractActor {
   private final LoggingAdapter LOG = Logging.getLogger(this);
 
   private final long txid;
   private final List<ActorRef> priests;
 
-  private DecreeLeader(Collection<ActorRef> priests, long txid) {
+  private DecreePresident(Collection<ActorRef> priests, long txid) {
     this.txid = txid;
     this.priests = new ArrayList<>(priests);
   }
 
   public static Props props(Collection<ActorRef> priests, long txid) {
-    return Props.create(DecreeLeader.class, priests, txid);
+    return Props.create(DecreePresident.class, priests, txid);
   }
 
-  private Object proposal;
+  @Nullable
+  private Object proposal = null;
 
   @Override
   public Receive createReceive() {
@@ -54,12 +56,12 @@ public final class DecreeLeader extends AbstractActor {
             ).build();
   }
 
-  private int ballot = -1;
+  private int lastTried = -1;
 
-  private void broadcastNextBallot(int ballot) {
-    LOG.info("Broadcasting NextBallot ballot={}, txid={}", ballot, txid);
-    this.ballot = ballot;
-    priests.forEach(p -> p.tell(new NextBallot(txid, ballot), self()));
+  private void broadcastNextBallot(int ballotNumber) {
+    LOG.info("Broadcasting NextBallot lastTried={}, txid={}", ballotNumber, txid);
+    this.lastTried = ballotNumber;
+    priests.forEach(p -> p.tell(new NextBallot(txid, ballotNumber), self()));
     getContext().become(nextBallotSent());
   }
 
@@ -70,23 +72,23 @@ public final class DecreeLeader extends AbstractActor {
   private Receive nextBallotSent() {
     return ReceiveBuilder.create().match(
             LastVote.class,
-            lastVote -> lastVote.ballot == ballot && lastVote.txid == txid,
+            lastVote -> lastVote.ballotNumber == lastTried && lastVote.txid == txid,
             lastVote -> {
               lastVotes.put(sender(), lastVote);
 
               if (lastVotes.size() > priests.size() / 2) {
                 final LastVote<?> winner = Collections.max(lastVotes.values());
 
-                if (winner.vote == SpecialValues.NO_VALUE) {
+                if (winner.vote == SpecialValues.BLANK) {
                   lockedValue = proposal;
-                } else if (winner.vote == SpecialValues.OUTDATED_BALLOT) {
-                  broadcastNextBallot(winner.ballot + 1);
+                } else if (winner.vote == SpecialValues.OUTDATED_BALLOT_NUMBER) {
+                  broadcastNextBallot(winner.ballotNumber + 1);
                   return;
                 } else {
                   lockedValue = winner.vote;
                 }
 
-                priests.forEach(p -> p.tell(new BeginBallot<>(txid, ballot, lockedValue), self()));
+                priests.forEach(p -> p.tell(new BeginBallot<>(txid, lastTried, lockedValue), self()));
                 getContext().become(beginBallotSent());
               }
             }
@@ -98,12 +100,12 @@ public final class DecreeLeader extends AbstractActor {
   private Receive beginBallotSent() {
     return ReceiveBuilder.create().match(
             Voted.class,
-            voted -> voted.ballot == ballot && voted.txid == txid,
+            voted -> voted.ballotNumber == lastTried && voted.txid == txid,
             voted -> {
               votedRefs.add(sender());
 
               if (votedRefs.size() > priests.size() / 2) {
-                priests.forEach(p -> p.tell(new Success(txid, ballot), self()));
+                priests.forEach(p -> p.tell(new Success(txid, lastTried), self()));
               }
             }
     ).build();

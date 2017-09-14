@@ -41,7 +41,7 @@ public class PaxosTest {
             kit -> system.actorOf(DecreePriest.props(1, kit.getRef()))
     ));
 
-    final ActorRef leader = system.actorOf(DecreeLeader.props(priests.values(), 1));
+    final ActorRef leader = system.actorOf(DecreePresident.props(priests.values(), 1));
     leader.tell(new PaxosAPI.Propose<>("VALUE", 1), ActorRef.noSender());
 
     priests.keySet().forEach(kit -> kit.expectMsg(new PaxosAPI.Decide<>("VALUE", 1)));
@@ -56,12 +56,12 @@ public class PaxosTest {
             kit -> system.actorOf(DecreePriest.props(1, kit.getRef()))
     ));
 
-    final ActorRef leader = system.actorOf(DecreeLeader.props(priests.values(), 1));
+    final ActorRef leader = system.actorOf(DecreePresident.props(priests.values(), 1));
     leader.tell(new PaxosAPI.Propose<>("VALUE", 1), ActorRef.noSender());
 
     priests.keySet().forEach(kit -> kit.expectMsg(new PaxosAPI.Decide<>("VALUE", 1)));
 
-    final ActorRef anotherLeader = system.actorOf(DecreeLeader.props(priests.values(), 1));
+    final ActorRef anotherLeader = system.actorOf(DecreePresident.props(priests.values(), 1));
     anotherLeader.tell(new PaxosAPI.Propose<>("ANOTHER_VALUE", 1), ActorRef.noSender());
 
     priests.keySet().forEach(kit -> kit.expectMsg(new PaxosAPI.Decide<>("VALUE", 1)));
@@ -88,7 +88,7 @@ public class PaxosTest {
 
     minorityPriests.values().forEach(p -> p.tell(PoisonPill.getInstance(), ActorRef.noSender()));
 
-    final ActorRef leader = system.actorOf(DecreeLeader.props(allPriests.values(), 1));
+    final ActorRef leader = system.actorOf(DecreePresident.props(allPriests.values(), 1));
     leader.tell(new PaxosAPI.Propose<>("VALUE", 1), ActorRef.noSender());
     majorityPriests.keySet().forEach(kit -> kit.expectMsg(new PaxosAPI.Decide<>("VALUE", 1)));
   }
@@ -112,13 +112,13 @@ public class PaxosTest {
     allPriests.putAll(majorityPriests);
     allPriests.putAll(minorityPriests);
 
-    final ActorRef leader = system.actorOf(DecreeLeader.props(allPriests.values(), 1));
+    final ActorRef leader = system.actorOf(DecreePresident.props(allPriests.values(), 1));
     leader.tell(new PaxosAPI.Propose<>("VALUE", 1), ActorRef.noSender());
     allPriests.keySet().forEach(kit -> kit.expectMsg(new PaxosAPI.Decide<>("VALUE", 1)));
 
     minorityPriests.values().forEach(p -> p.tell(PoisonPill.getInstance(), ActorRef.noSender()));
 
-    final ActorRef anotherLeader = system.actorOf(DecreeLeader.props(allPriests.values(), 1));
+    final ActorRef anotherLeader = system.actorOf(DecreePresident.props(allPriests.values(), 1));
     anotherLeader.tell(new PaxosAPI.Propose<>("ANOTHER_VALUE", 1), ActorRef.noSender());
     majorityPriests.keySet().forEach(kit -> kit.expectMsg(new PaxosAPI.Decide<>("VALUE", 1)));
   }
@@ -144,7 +144,7 @@ public class PaxosTest {
 
     majorityPriests.values().forEach(p -> p.tell(PoisonPill.getInstance(), ActorRef.noSender()));
 
-    final ActorRef leader = system.actorOf(DecreeLeader.props(allPriests.values(), 1));
+    final ActorRef leader = system.actorOf(DecreePresident.props(allPriests.values(), 1));
     leader.tell(new PaxosAPI.Propose<>("VALUE", 1), ActorRef.noSender());
     allPriests.keySet().forEach(testKit -> testKit.expectNoMsg(Duration.create(30, MILLISECONDS)));
   }

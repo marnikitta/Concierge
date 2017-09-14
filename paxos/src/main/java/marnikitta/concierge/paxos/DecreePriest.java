@@ -19,8 +19,8 @@ public final class DecreePriest extends AbstractActor {
   private final ActorRef subscriber;
   private final long txid;
 
-  private Object vote = SpecialValues.NO_VALUE;
-  private int maxBallot = 0;
+  private Object lastVote = SpecialValues.BLANK;
+  private int lastBallot = 0;
 
   private DecreePriest(long txid, ActorRef subscriber) {
     this.txid = txid;
@@ -35,33 +35,33 @@ public final class DecreePriest extends AbstractActor {
   public Receive createReceive() {
     return ReceiveBuilder.create()
             .match(NextBallot.class, nextBallot -> {
-              if (nextBallot.ballot > maxBallot) {
-                maxBallot = nextBallot.ballot;
-                sender().tell(new LastVote<>(txid, maxBallot, vote), self());
+              if (nextBallot.ballotNumber > lastBallot) {
+                lastBallot = nextBallot.ballotNumber;
+                sender().tell(new LastVote<>(txid, lastBallot, lastVote), self());
               } else {
-                sender().tell(new LastVote<>(txid, maxBallot, SpecialValues.OUTDATED_BALLOT), self());
+                sender().tell(new LastVote<>(txid, lastBallot, SpecialValues.OUTDATED_BALLOT_NUMBER), self());
                 LOG.warning(
-                        "Proposer has outdated ballot number proposer={}, ballot={}, currentBallot={}",
-                        sender(), nextBallot.ballot, maxBallot
+                        "Proposer has outdated ballotNumber number proposer={}, ballotNumber={}, currentBallot={}",
+                        sender(), nextBallot.ballotNumber, lastBallot
                 );
               }
             })
             .match(BeginBallot.class, beginBallot -> {
-              //FIXME: equal ballot numbers may cause collisions, but they shouldn't pass NextBallot
-              if (beginBallot.ballot == maxBallot) {
-                vote = beginBallot.decree;
-                sender().tell(new Voted<>(txid, beginBallot.ballot, beginBallot.decree), self());
+              //FIXME: equal ballotNumber numbers may cause collisions, but they shouldn't pass NextBallot
+              if (beginBallot.ballotNumber == lastBallot) {
+                lastVote = beginBallot.decree;
+                sender().tell(new Voted<>(txid, beginBallot.ballotNumber, beginBallot.decree), self());
               } else {
-                sender().tell(new Voted<>(txid, maxBallot, SpecialValues.OUTDATED_BALLOT), self());
+                sender().tell(new Voted<>(txid, lastBallot, SpecialValues.OUTDATED_BALLOT_NUMBER), self());
                 LOG.warning(
-                        "Proposer has outdated ballot number proposer={}, ballot={}, currentBallot={}",
-                        sender(), beginBallot.ballot, maxBallot
+                        "Proposer has outdated ballotNumber number proposer={}, ballotNumber={}, currentBallot={}",
+                        sender(), beginBallot.ballotNumber, lastBallot
                 );
               }
             })
             .match(Success.class, success -> {
-              LOG.info("Learned {} for txid={}", vote, txid);
-              subscriber.tell(new PaxosAPI.Decide<>(vote, txid), self());
+              LOG.info("Learned {} for txid={}", lastVote, txid);
+              subscriber.tell(new PaxosAPI.Decide<>(lastVote, txid), self());
             })
             .build();
 

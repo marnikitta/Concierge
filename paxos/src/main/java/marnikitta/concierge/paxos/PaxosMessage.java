@@ -7,18 +7,18 @@ public interface PaxosMessage {
 
   class NextBallot implements PaxosMessage {
     public final long txid;
-    public final int ballot;
+    public final int ballotNumber;
 
-    public NextBallot(long txid, int ballot) {
+    public NextBallot(long txid, int ballotNumber) {
       this.txid = txid;
-      this.ballot = ballot;
+      this.ballotNumber = ballotNumber;
     }
 
     @Override
     public String toString() {
       return "NextBallot{" +
               "txid=" + txid +
-              ", ballot=" + ballot +
+              ", ballotNumber=" + ballotNumber +
               '}';
     }
 
@@ -30,12 +30,12 @@ public interface PaxosMessage {
 
   class LastVote<T> implements PaxosMessage, Comparable<LastVote<?>> {
     public final long txid;
-    public final int ballot;
+    public final int ballotNumber;
     public final T vote;
 
-    public LastVote(long txid, int ballot, T vote) {
+    public LastVote(long txid, int ballotNumber, T vote) {
       this.txid = txid;
-      this.ballot = ballot;
+      this.ballotNumber = ballotNumber;
       this.vote = vote;
     }
 
@@ -43,14 +43,14 @@ public interface PaxosMessage {
     public String toString() {
       return "LastVote{" +
               "txid=" + txid +
-              ", ballot=" + ballot +
+              ", ballotNumber=" + ballotNumber +
               ", vote=" + vote +
               '}';
     }
 
     @Override
     public int compareTo(@NotNull LastVote<?> o) {
-      return Integer.compare(this.ballot, o.ballot);
+      return Integer.compare(this.ballotNumber, o.ballotNumber);
     }
 
     @Override
@@ -61,12 +61,12 @@ public interface PaxosMessage {
 
   class BeginBallot<T> implements PaxosMessage {
     public final long txid;
-    public final int ballot;
+    public final int ballotNumber;
     public final T decree;
 
-    public BeginBallot(long txid, int ballot, T decree) {
+    public BeginBallot(long txid, int ballotNumber, T decree) {
       this.txid = txid;
-      this.ballot = ballot;
+      this.ballotNumber = ballotNumber;
       this.decree = decree;
     }
 
@@ -74,7 +74,7 @@ public interface PaxosMessage {
     public String toString() {
       return "BeginBallot{" +
               "txid=" + txid +
-              ", ballot=" + ballot +
+              ", ballotNumber=" + ballotNumber +
               ", vote=" + decree +
               '}';
     }
@@ -87,12 +87,12 @@ public interface PaxosMessage {
 
   class Voted<T> implements PaxosMessage {
     public final long txid;
-    public final long ballot;
+    public final long ballotNumber;
     public final T vote;
 
-    public Voted(long txid, long ballot, T vote) {
+    public Voted(long txid, long ballotNumber, T vote) {
       this.txid = txid;
-      this.ballot = ballot;
+      this.ballotNumber = ballotNumber;
       this.vote = vote;
     }
 
@@ -100,7 +100,7 @@ public interface PaxosMessage {
     public String toString() {
       return "Voted{" +
               "txid=" + txid +
-              ", ballot=" + ballot +
+              ", ballotNumber=" + ballotNumber +
               ", vote=" + vote +
               '}';
     }
@@ -113,18 +113,18 @@ public interface PaxosMessage {
 
   class Success implements PaxosMessage {
     public final long txid;
-    public final long ballot;
+    public final long ballotNumber;
 
-    public Success(long txid, long ballot) {
+    public Success(long txid, long ballotNumber) {
       this.txid = txid;
-      this.ballot = ballot;
+      this.ballotNumber = ballotNumber;
     }
 
     @Override
     public String toString() {
       return "Success{" +
               "txid=" + txid +
-              ", ballot=" + ballot +
+              ", ballotNumber=" + ballotNumber +
               '}';
     }
 
@@ -135,7 +135,7 @@ public interface PaxosMessage {
   }
 
   enum SpecialValues {
-    NO_VALUE,
-    OUTDATED_BALLOT
+    BLANK,
+    OUTDATED_BALLOT_NUMBER
   }
 }
