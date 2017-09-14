@@ -15,5 +15,6 @@
         <module>leader-election</module>
         <module>paxos</module>
         <module>atomic-broadcast</module>
+        <module>common</module>
     </modules>
 </project>

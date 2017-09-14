@@ -1,20 +1,24 @@
 package marnikitta.leader.election;
 
+import akka.actor.ActorPath;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.PoisonPill;
 import akka.testkit.javadsl.TestKit;
+import marnikitta.concierge.common.Cluster;
 import org.testng.annotations.AfterSuite;
 import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.Test;
 
 import java.util.Collections;
 import java.util.Map;
-import java.util.SortedMap;
-import java.util.TreeMap;
+import java.util.SortedSet;
+import java.util.TreeSet;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-import java.util.stream.Stream;
+import java.util.stream.LongStream;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toMap;
 
 public class OmegaElectorTest {
@@ -31,34 +35,56 @@ public class OmegaElectorTest {
   }
 
   @Test
-  public void singleLeader() {
-    final Map<TestKit, ActorRef> electors = Stream.generate(() -> new TestKit(system)).limit(100)
-            .collect(toMap(Function.identity(), kit -> system.actorOf(OmegaElector.props(kit.getRef()))));
+  public void defaultLeader() {
+    final int electorsCount = 20;
+    final Map<Long, ActorPath> paths = LongStream.range(0, electorsCount)
+            .boxed()
+            .collect(toMap(Function.identity(), i -> system.child("defaultelector" + i)));
 
-    electors.values().forEach(e -> e.tell(new ElectorAPI.RegisterElectors(electors.values()), null));
+    final Map<Long, TestKit> kits = LongStream.range(0, electorsCount)
+            .boxed()
+            .collect(toMap(Function.identity(), i -> new TestKit(system)));
 
-    final ActorRef min = Collections.min(electors.values());
-    electors.keySet().forEach(kit -> kit.expectMsg(new ElectorAPI.NewLeader(min)));
+    final Map<Long, ActorRef> electors = LongStream.range(0, electorsCount)
+            .boxed()
+            .collect(toMap(
+                    Function.identity(),
+                    i -> system.actorOf(OmegaElector.props(kits.get(i).getRef(), new Cluster(paths)), "defaultelector" + i)
+            ));
+
+    final long min = Collections.min(electors.keySet());
+    kits.values().forEach(kit -> kit.expectMsg(new ElectorAPI.NewLeader(min)));
   }
 
+
   @Test
-  public void fallingOneByOne() {
-    final SortedMap<ActorRef, TestKit> electors = Stream.generate(() -> new TestKit(system)).limit(100)
+  public void failingOneByOne() throws InterruptedException {
+    final int electorsCount = 20;
+    final Map<Long, ActorPath> paths = LongStream.range(0, electorsCount)
+            .boxed()
+            .collect(toMap(Function.identity(), i -> system.child("failingelector" + i)));
+
+    final Map<Long, TestKit> kits = LongStream.range(0, electorsCount)
+            .boxed()
+            .collect(toMap(Function.identity(), i -> new TestKit(system)));
+
+    final Map<Long, ActorRef> electors = LongStream.range(0, electorsCount)
+            .boxed()
             .collect(toMap(
-                    kit -> system.actorOf(OmegaElector.props(kit.getRef())),
                     Function.identity(),
-                    (u, v) -> v,
-                    TreeMap::new
-                    )
-            );
+                    i -> system.actorOf(OmegaElector.props(kits.get(i).getRef(), new Cluster(paths)), "failingelector" + i)
+            ));
 
-    electors.keySet().forEach(e -> e.tell(new ElectorAPI.RegisterElectors(electors.keySet()), null));
+    final SortedSet<Long> alive = new TreeSet<>(paths.keySet());
 
-    while (!electors.isEmpty()) {
-      final ActorRef currentMin = electors.firstKey();
-      electors.values().forEach(kit -> kit.expectMsg(new ElectorAPI.NewLeader(currentMin)));
-      currentMin.tell(PoisonPill.getInstance(), ActorRef.noSender());
-      electors.remove(electors.firstKey());
+    SECONDS.sleep(5);
+
+    while (!alive.isEmpty()) {
+      final long min = alive.first();
+      alive.stream().map(kits::get).forEach(kit -> kit.expectMsg(new ElectorAPI.NewLeader(min)));
+
+      electors.get(min).tell(PoisonPill.getInstance(), ActorRef.noSender());
+      alive.remove(min);
     }
   }
 }

@@ -2,142 +2,89 @@ package marnikitta.leader.election;
 
 import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
+import akka.actor.Identify;
 import akka.actor.Props;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import akka.japi.pf.ReceiveBuilder;
-import marnikitta.failure.detector.DetectorAPI;
+import marnikitta.concierge.common.Cluster;
 import marnikitta.failure.detector.EventuallyStrongDetector;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Collections;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
+import static java.util.Collections.*;
 import static marnikitta.failure.detector.DetectorAPI.Restore;
 import static marnikitta.failure.detector.DetectorAPI.Suspect;
 import static marnikitta.leader.election.ElectorAPI.NewLeader;
-import static marnikitta.leader.election.ElectorAPI.RegisterElectors;
-import static marnikitta.leader.election.ElectorMessages.DetectorIdentity;
-import static marnikitta.leader.election.ElectorMessages.IdentifyDetector;
 
 public class OmegaElector extends AbstractActor {
   private final LoggingAdapter LOG = Logging.getLogger(this);
 
-  private final ActorRef subscriber; private final ActorRef failureDetector = context().actorOf(EventuallyStrongDetector.props(), "detector");
+  private final ActorRef subscriber;
 
-  private final SortedSet<ActorRef> electors = new TreeSet<>();
-  private final Map<ActorRef, ActorRef> failureDetectorToElector = new HashMap<>();
+  private final SortedSet<Long> aliveElectors;
 
-  private OmegaElector(ActorRef subscriber) {
+  private final Cluster cluster;
+
+  private OmegaElector(ActorRef subscriber, Cluster cluster) {
+    this.aliveElectors = new TreeSet<>(cluster.paths.keySet());
     this.subscriber = subscriber;
+    this.cluster = cluster;
+    context().actorOf(
+            EventuallyStrongDetector.props(new Cluster(cluster.paths, "detector")),
+            "detector"
+    );
   }
 
-  public static Props props(ActorRef subscriber) {
-    return Props.create(OmegaElector.class, subscriber);
+  public static Props props(ActorRef subscriber, Cluster cluster) {
+    return Props.create(OmegaElector.class, subscriber, cluster);
+  }
+
+  @Override
+  public void preStart() throws Exception {
+    LOG.info("New leader elected by default: {}", aliveElectors.first());
+    subscriber.tell(new NewLeader(aliveElectors.first()), self());
+    super.preStart();
   }
 
   @Override
   public Receive createReceive() {
     return ReceiveBuilder.create()
-            .match(IdentifyDetector.class, identifyDetector ->
-                    sender().tell(new DetectorIdentity(this.failureDetector), self()))
-            .match(RegisterElectors.class, register -> {
-              if (register.participant.isEmpty()) {
-                throw new IllegalArgumentException("Participants shouldn't be empty");
-              }
-              electors.addAll(register.participant);
-              electors.forEach(e -> e.tell(new IdentifyDetector(), self()));
-
-              LOG.info("Electors registered");
-              getContext().become(identifyingDetectors());
-            })
-            .build();
-  }
-
-  private Receive identifyingDetectors() {
-    return ReceiveBuilder.create()
-            .match(IdentifyDetector.class, identifyDetector ->
-                    sender().tell(new DetectorIdentity(this.failureDetector), self()))
-            .match(DetectorIdentity.class, identity -> {
-              LOG.info("Received identity {}", identity);
-              failureDetectorToElector.put(identity.detector, sender());
-
-              if (failureDetectorToElector.values().containsAll(electors)) {
-                LOG.info("All electors are registered");
-                failureDetector.tell(new DetectorAPI.RegisterDetectors(failureDetectorToElector.keySet()), self());
-
-                LOG.info("New leader is elected {}", electors.first());
-                subscriber.tell(new NewLeader(electors.first()), sender());
-
-                getContext().become(electorsRegistered());
-              }
-            })
-            .build();
-  }
-
-  private Receive electorsRegistered() {
-    return ReceiveBuilder.create()
-            .match(IdentifyDetector.class, identifyDetector ->
-                    sender().tell(new DetectorIdentity(this.failureDetector), self()))
             .match(Suspect.class, this::onSuspect)
             .match(Restore.class, this::onRestore)
             .build();
   }
 
   private void onSuspect(Suspect suspect) {
-    final ActorRef elector = failureDetectorToElector.get(suspect.theSuspect);
-
-    if (!electors.contains(elector)) {
+    if (!aliveElectors.contains(suspect.theSuspect)) {
       throw new IllegalStateException("Double suspecting, probably incorrect failure detector implementation");
     }
 
-    if (electors.first().equals(elector)) {
-      electors.remove(elector);
-      if (electors.isEmpty()) {
-        LOG.info("New leader elected {}", null);
-        subscriber.tell(new NewLeader(null), self());
+    if (aliveElectors.first().equals(suspect.theSuspect)) {
+      aliveElectors.remove(suspect.theSuspect);
+      if (aliveElectors.isEmpty()) {
+        LOG.warning("There are no electors alive...");
       } else {
-        LOG.info("New leader elected {}", electors.first());
-        subscriber.tell(new NewLeader(electors.first()), self());
+        LOG.info("New leader elected by previous suspect: {}", aliveElectors.first());
+        subscriber.tell(new NewLeader(aliveElectors.first()), self());
       }
     } else {
-      electors.remove(elector);
+      aliveElectors.remove(suspect.theSuspect);
     }
   }
 
   private void onRestore(Restore restore) {
-    final ActorRef elector = failureDetectorToElector.get(restore.theSuspect);
-
-    if (electors.contains(elector)) {
+    if (aliveElectors.contains(restore.theSuspect)) {
       throw new IllegalStateException("Double restoring, probably incorrect failure detector implementation");
     }
 
-    electors.add(elector);
+    aliveElectors.add(restore.theSuspect);
 
-    if (electors.first().equals(elector)) {
-      LOG.info("New leader elected {}", elector);
-      subscriber.tell(new NewLeader(elector), self());
-    }
-  }
-}
-
-interface ElectorMessages {
-  class IdentifyDetector {
-  }
-
-  class DetectorIdentity {
-    public final ActorRef detector;
-
-    public DetectorIdentity(ActorRef detector) {
-      this.detector = detector;
-    }
-
-    @Override
-    public String toString() {
-      return "DetectorIdentity{" +
-              "detector=" + detector +
-              '}';
+    if (aliveElectors.first().equals(restore.theSuspect)) {
+      LOG.info("New leader elected by restoring: {}", restore.theSuspect);
+      subscriber.tell(new NewLeader(restore.theSuspect), self());
     }
   }
 }

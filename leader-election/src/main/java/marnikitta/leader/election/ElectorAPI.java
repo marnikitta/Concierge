@@ -8,25 +8,10 @@ import java.util.Objects;
 import java.util.Set;
 
 public interface ElectorAPI {
-  class RegisterElectors {
-    public final Set<ActorRef> participant;
-
-    public RegisterElectors(Collection<ActorRef> participant) {
-      this.participant = new HashSet<>(participant);
-    }
-
-    @Override
-    public String toString() {
-      return "RegisterElectors{" +
-              "participant=" + participant +
-              '}';
-    }
-  }
-
   class NewLeader {
-    public final ActorRef leader;
+    public final long leader;
 
-    public NewLeader(ActorRef leader) {
+    public NewLeader(long leader) {
       this.leader = leader;
     }
 
@@ -40,7 +25,7 @@ public interface ElectorAPI {
       if (this == o) return true;
       if (o == null || getClass() != o.getClass()) return false;
       final NewLeader newLeader = (NewLeader) o;
-      return Objects.equals(leader, newLeader.leader);
+      return leader == newLeader.leader;
     }
 
     @Override

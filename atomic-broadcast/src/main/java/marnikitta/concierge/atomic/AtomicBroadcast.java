@@ -8,7 +8,7 @@ import akka.event.LoggingAdapter;
 import akka.japi.pf.ReceiveBuilder;
 import gnu.trove.map.TLongObjectMap;
 import gnu.trove.map.hash.TLongObjectHashMap;
-import marnikitta.concierge.paxos.DecreeLeader;
+import marnikitta.concierge.paxos.DecreePresident;
 import marnikitta.concierge.paxos.DecreePriest;
 import marnikitta.concierge.paxos.PaxosAPI;
 import marnikitta.concierge.paxos.PaxosMessage;
@@ -31,7 +31,7 @@ import static marnikitta.concierge.atomic.BroadcastMessages.IdentifyElector;
 public final class AtomicBroadcast extends AbstractActor {
   private final LoggingAdapter LOG = Logging.getLogger(this);
 
-  private final ActorRef omegaElector = context().actorOf(OmegaElector.props(self()));
+  private final ActorRef omegaElector = null;
 
   private final Set<ActorRef> broadcasts = new HashSet<>();
   private final Map<ActorRef, ActorRef> electorToBroadcast = new HashMap<>();
@@ -94,7 +94,8 @@ public final class AtomicBroadcast extends AbstractActor {
       unhandled(broadcast);
     } else if (self().equals(currentLeader)) {
       lastTxid++;
-      final ActorRef lead = context().actorOf(DecreeLeader.props(broadcasts, lastTxid));
+      //TODO: delete leaders on timeout
+      final ActorRef lead = context().actorOf(DecreePresident.props(broadcasts, lastTxid));
       lead.tell(new PaxosAPI.Propose<>(broadcast.value, lastTxid), self());
     } else {
       LOG.info("Redirecting message to the current leader, message={}, leader={}", broadcast, currentLeader);
