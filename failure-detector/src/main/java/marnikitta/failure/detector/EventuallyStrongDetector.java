@@ -23,6 +23,7 @@ import java.util.TreeSet;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static marnikitta.failure.detector.DetectorAPI.Restore;
 import static marnikitta.failure.detector.DetectorAPI.Suspect;
 import static marnikitta.failure.detector.DetectorMessages.CHECK_HEARTBEATS;
@@ -39,7 +40,7 @@ public class EventuallyStrongDetector extends AbstractActor {
   private final LoggingAdapter LOG = Logging.getLogger(this);
 
   private final Map<ActorRef, Long> detectors = new HashMap<>();
-  private final NavigableSet<Long> ids = new TreeSet<>();
+  private final NavigableSet<Long> ids;
 
   private final SortedSet<Long> suspected = new TreeSet<>();
 
@@ -68,6 +69,9 @@ public class EventuallyStrongDetector extends AbstractActor {
 
   private EventuallyStrongDetector(Cluster cluster) {
     this.cluster = cluster;
+    this.ids = new TreeSet<>(cluster.paths.keySet());
+    ids.forEach(id -> lastBeat.put(id, System.nanoTime() + SECONDS.toNanos(10)));
+    ids.forEach(id -> currentDelay.put(id, HEARTBEAT_DELAY * 2));
   }
 
   public static Props props(Cluster cluster) {
@@ -99,6 +103,9 @@ public class EventuallyStrongDetector extends AbstractActor {
   @Override
   public Receive createReceive() {
     return ReceiveBuilder.create()
+            .match(DetectorMessages.class, m -> m == HEARTBEAT, m -> onHeartbeat())
+            .match(DetectorMessages.class, m -> m == SEND_HEARTBEAT, m -> sendHeartbeats())
+            .match(DetectorMessages.class, m -> m == CHECK_HEARTBEATS, m -> checkHeartbeats())
             .match(ActorIdentity.class,
                     actorIdentity -> !actorIdentity.getActorRef().isPresent(),
                     actorIdentity -> {
@@ -113,24 +120,11 @@ public class EventuallyStrongDetector extends AbstractActor {
                     actorIdentity -> actorIdentity.getActorRef().isPresent(),
                     actorIdentity -> {
                       detectors.put(actorIdentity.getRef(), (long) actorIdentity.correlationId());
-                      ids.add((long) actorIdentity.correlationId());
 
                       if (ids.containsAll(cluster.paths.keySet())) {
                         LOG.info("All detector identities are received");
-                        ids.forEach(id -> lastBeat.put(id, System.nanoTime() + HEARTBEAT_DELAY));
-                        ids.forEach(id -> currentDelay.put(id, HEARTBEAT_DELAY * 2));
-
-                        getContext().become(detectorsAreIdentified());
                       }
                     })
-            .build();
-  }
-
-  private Receive detectorsAreIdentified() {
-    return ReceiveBuilder.create()
-            .match(DetectorMessages.class, m -> m == HEARTBEAT, m -> onHeartbeat())
-            .match(DetectorMessages.class, m -> m == SEND_HEARTBEAT, m -> sendHeartbeats())
-            .match(DetectorMessages.class, m -> m == CHECK_HEARTBEATS, m -> checkHeartbeats())
             .build();
   }
 
