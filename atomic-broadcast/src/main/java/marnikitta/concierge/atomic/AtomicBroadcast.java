@@ -8,6 +8,7 @@ import akka.event.LoggingAdapter;
 import akka.japi.pf.ReceiveBuilder;
 import gnu.trove.map.TLongObjectMap;
 import gnu.trove.map.hash.TLongObjectHashMap;
+import marnikitta.concierge.common.Cluster;
 import marnikitta.concierge.paxos.DecreePresident;
 import marnikitta.concierge.paxos.DecreePriest;
 import marnikitta.concierge.paxos.PaxosAPI;
@@ -17,25 +18,20 @@ import marnikitta.leader.election.OmegaElector;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
 import static marnikitta.concierge.atomic.AtomicBroadcastAPI.Broadcast;
-import static marnikitta.concierge.atomic.AtomicBroadcastAPI.RegisterBroadcasts;
-import static marnikitta.concierge.atomic.BroadcastMessages.ElectorIdentity;
-import static marnikitta.concierge.atomic.BroadcastMessages.IdentifyElector;
 
 public final class AtomicBroadcast extends AbstractActor {
   private final LoggingAdapter LOG = Logging.getLogger(this);
 
-  private final ActorRef omegaElector = null;
-
-  private final Set<ActorRef> broadcasts = new HashSet<>();
-  private final Map<ActorRef, ActorRef> electorToBroadcast = new HashMap<>();
+  private final ActorRef omegaElector;
   private final ActorRef subscriber;
+  private final Cluster cluster;
+
+  private final Map<ActorRef, Long> broadcasts = new HashMap<>();
 
   @Nullable
   private ActorRef currentLeader = null;
@@ -43,45 +39,28 @@ public final class AtomicBroadcast extends AbstractActor {
 
   private long lastTxid;
 
-  private AtomicBroadcast(ActorRef subscriber) {
+  private AtomicBroadcast(long id, ActorRef subscriber, Cluster cluster) {
     this.subscriber = subscriber;
+    this.cluster = cluster;
+
+    this.omegaElector = context().actorOf(
+            OmegaElector.props(self(), new Cluster(cluster.paths, "elector")),
+            "elector"
+    );
   }
 
-  public static Props props(ActorRef subscriber) {
-    return Props.create(AtomicBroadcast.class, subscriber);
+  public static Props props(long id, ActorRef subscriber, Cluster cluster) {
+    return Props.create(AtomicBroadcast.class, id, subscriber, cluster);
   }
 
   @Override
   public Receive createReceive() {
     return ReceiveBuilder.create()
-            .match(IdentifyElector.class, i -> sender().tell(new ElectorIdentity(omegaElector), self()))
-            .match(RegisterBroadcasts.class, registerBroadcasts -> {
-              LOG.info("Broadcasts are registered {}", registerBroadcasts);
-              broadcasts.addAll(registerBroadcasts.broadcasts);
-              broadcasts.forEach(b -> b.tell(new IdentifyElector(), self()));
-              getContext().become(identifyingElectors());
-            })
-            .build();
-  }
-
-  private Receive identifyingElectors() {
-    return ReceiveBuilder.create()
-            .match(IdentifyElector.class, i -> sender().tell(new ElectorIdentity(omegaElector), self()))
-            .match(ElectorIdentity.class, identity -> {
-              LOG.info("Received elector identity {}", identity);
-              electorToBroadcast.put(identity.elector, sender());
-              if (electorToBroadcast.values().containsAll(broadcasts)) {
-                LOG.info("Received all identities");
-                getContext().become(receivingBroadcasts());
-              }
-            })
             .build();
   }
 
   private Receive receivingBroadcasts() {
     return ReceiveBuilder.create()
-            .match(IdentifyElector.class, i -> sender().tell(new ElectorIdentity(omegaElector), self()))
-            .match(ElectorAPI.NewLeader.class, leader -> currentLeader = electorToBroadcast.get(leader.leader))
             .match(Broadcast.class, this::onBroadcast)
             .match(PaxosMessage.class, this::onPaxosMessage)
             .match(PaxosAPI.Decide.class, this::onDecide)
@@ -130,26 +109,6 @@ public final class AtomicBroadcast extends AbstractActor {
       LOG.info("Created priest for txid={}", paxosMessage.txid());
       final ActorRef priest = context().actorOf(DecreePriest.props(paxosMessage.txid(), self()));
       priest.tell(paxosMessage, sender());
-    }
-  }
-}
-
-interface BroadcastMessages {
-  class IdentifyElector {
-  }
-
-  class ElectorIdentity {
-    public final ActorRef elector;
-
-    public ElectorIdentity(ActorRef elector) {
-      this.elector = elector;
-    }
-
-    @Override
-    public String toString() {
-      return "ElectorIdentity{" +
-              "elector=" + elector +
-              '}';
     }
   }
 }

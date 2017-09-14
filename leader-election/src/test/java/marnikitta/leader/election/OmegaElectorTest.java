@@ -14,7 +14,6 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.LongStream;
 
@@ -49,7 +48,7 @@ public class OmegaElectorTest {
             .boxed()
             .collect(toMap(
                     Function.identity(),
-                    i -> system.actorOf(OmegaElector.props(kits.get(i).getRef(), new Cluster(paths)), "defaultelector" + i)
+                    i -> system.actorOf(OmegaElector.props(i, kits.get(i).getRef(), new Cluster(paths)), "defaultelector" + i)
             ));
 
     final long min = Collections.min(electors.keySet());
@@ -72,7 +71,7 @@ public class OmegaElectorTest {
             .boxed()
             .collect(toMap(
                     Function.identity(),
-                    i -> system.actorOf(OmegaElector.props(kits.get(i).getRef(), new Cluster(paths)), "failingelector" + i)
+                    i -> system.actorOf(OmegaElector.props(i, kits.get(i).getRef(), new Cluster(paths)), "failingelector" + i)
             ));
 
     final SortedSet<Long> alive = new TreeSet<>(paths.keySet());

@@ -1,11 +1,6 @@
 package marnikitta.leader.election;
 
-import akka.actor.ActorRef;
-
-import java.util.Collection;
-import java.util.HashSet;
 import java.util.Objects;
-import java.util.Set;
 
 public interface ElectorAPI {
   class NewLeader {

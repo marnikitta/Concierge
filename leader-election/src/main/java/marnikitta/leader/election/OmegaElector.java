@@ -26,25 +26,22 @@ public class OmegaElector extends AbstractActor {
 
   private final SortedSet<Long> aliveElectors;
 
-  private final Cluster cluster;
-
-  private OmegaElector(ActorRef subscriber, Cluster cluster) {
+  private OmegaElector(long id, ActorRef subscriber, Cluster cluster) {
     this.aliveElectors = new TreeSet<>(cluster.paths.keySet());
     this.subscriber = subscriber;
-    this.cluster = cluster;
     context().actorOf(
-            EventuallyStrongDetector.props(new Cluster(cluster.paths, "detector")),
+            EventuallyStrongDetector.props(id, new Cluster(cluster.paths, "detector")),
             "detector"
     );
   }
 
-  public static Props props(ActorRef subscriber, Cluster cluster) {
-    return Props.create(OmegaElector.class, subscriber, cluster);
+  public static Props props(long id, ActorRef subscriber, Cluster cluster) {
+    return Props.create(OmegaElector.class, id, subscriber, cluster);
   }
 
   @Override
   public void preStart() throws Exception {
-    LOG.info("New leader elected by default: {}", aliveElectors.first());
+    LOG.info("New leader elected by the default: {}", aliveElectors.first());
     subscriber.tell(new NewLeader(aliveElectors.first()), self());
     super.preStart();
   }
@@ -67,7 +64,7 @@ public class OmegaElector extends AbstractActor {
       if (aliveElectors.isEmpty()) {
         LOG.warning("There are no electors alive...");
       } else {
-        LOG.info("New leader elected by previous suspect: {}", aliveElectors.first());
+        LOG.info("New leader elected by the previous suspect: {}", aliveElectors.first());
         subscriber.tell(new NewLeader(aliveElectors.first()), self());
       }
     } else {
@@ -83,7 +80,7 @@ public class OmegaElector extends AbstractActor {
     aliveElectors.add(restore.theSuspect);
 
     if (aliveElectors.first().equals(restore.theSuspect)) {
-      LOG.info("New leader elected by restoring: {}", restore.theSuspect);
+      LOG.info("New leader elected by the restoring: {}", restore.theSuspect);
       subscriber.tell(new NewLeader(restore.theSuspect), self());
     }
   }
