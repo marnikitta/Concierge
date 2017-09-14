@@ -2,6 +2,7 @@ package marnikitta.concierge.atomic;
 
 import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
+import akka.actor.Props;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import akka.japi.pf.ReceiveBuilder;
@@ -19,6 +20,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 import static marnikitta.concierge.atomic.AtomicBroadcastAPI.Broadcast;
 import static marnikitta.concierge.atomic.AtomicBroadcastAPI.RegisterBroadcasts;
@@ -27,16 +30,26 @@ import static marnikitta.concierge.atomic.BroadcastMessages.IdentifyElector;
 
 public final class AtomicBroadcast extends AbstractActor {
   private final LoggingAdapter LOG = Logging.getLogger(this);
+
   private final ActorRef omegaElector = context().actorOf(OmegaElector.props(self()));
 
   private final Set<ActorRef> broadcasts = new HashSet<>();
   private final Map<ActorRef, ActorRef> electorToBroadcast = new HashMap<>();
-
-  private final TLongObjectMap<ActorRef> decrees = new TLongObjectHashMap<>();
-  private long lastTxid;
+  private final ActorRef subscriber;
 
   @Nullable
   private ActorRef currentLeader = null;
+  private final TLongObjectMap<ActorRef> decrees = new TLongObjectHashMap<>();
+
+  private long lastTxid;
+
+  private AtomicBroadcast(ActorRef subscriber) {
+    this.subscriber = subscriber;
+  }
+
+  public static Props props(ActorRef subscriber) {
+    return Props.create(AtomicBroadcast.class, subscriber);
+  }
 
   @Override
   public Receive createReceive() {
@@ -89,6 +102,26 @@ public final class AtomicBroadcast extends AbstractActor {
     }
   }
 
+  private long lastDeliveredTxid = -1;
+  private final SortedMap<Long, Object> pending = new TreeMap<>();
+
+  private void onDecide(PaxosAPI.Decide<?> decide) {
+    if (decide.txid <= lastDeliveredTxid) {
+      LOG.info("txid={} is already delivered", decide.txid);
+    } else {
+      LOG.info("Enqueued txid={}", decide.txid);
+      pending.put(decide.txid, decide.value);
+    }
+
+    while (pending.firstKey() == lastDeliveredTxid + 1) {
+      final long first = pending.firstKey();
+      LOG.info("Delivering txid={}", first);
+      subscriber.tell(new AtomicBroadcastAPI.Deliver<>(pending.get(first)), self());
+      pending.remove(first);
+      lastDeliveredTxid = first;
+    }
+  }
+
   private void onPaxosMessage(PaxosMessage paxosMessage) {
     if (decrees.containsKey(paxosMessage.txid())) {
       decrees.get(paxosMessage.txid()).tell(paxosMessage, sender());
@@ -97,9 +130,6 @@ public final class AtomicBroadcast extends AbstractActor {
       final ActorRef priest = context().actorOf(DecreePriest.props(paxosMessage.txid(), self()));
       priest.tell(paxosMessage, sender());
     }
-  }
-
-  private void onDecide(PaxosAPI.Decide<?> decide) {
   }
 }
 
