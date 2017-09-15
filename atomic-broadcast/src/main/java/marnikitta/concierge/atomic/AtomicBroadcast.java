@@ -9,8 +9,8 @@ import akka.japi.pf.ReceiveBuilder;
 import gnu.trove.map.TLongObjectMap;
 import gnu.trove.map.hash.TLongObjectHashMap;
 import marnikitta.concierge.common.Cluster;
-import marnikitta.concierge.paxos.President;
-import marnikitta.concierge.paxos.Priest;
+import marnikitta.concierge.paxos.DecreePresident;
+import marnikitta.concierge.paxos.DecreePriest;
 import marnikitta.concierge.paxos.PaxosAPI;
 import marnikitta.concierge.paxos.PaxosMessage;
 import marnikitta.leader.election.OmegaElector;
@@ -43,7 +43,7 @@ public final class AtomicBroadcast extends AbstractActor {
     this.cluster = cluster;
 
     this.omegaElector = context().actorOf(
-            OmegaElector.props(self(), new Cluster(cluster.paths, "elector")),
+            OmegaElector.props(id, self(), new Cluster(cluster.paths, "elector")),
             "elector"
     );
   }
@@ -73,7 +73,7 @@ public final class AtomicBroadcast extends AbstractActor {
     } else if (self().equals(currentLeader)) {
       lastTxid++;
       //TODO: delete leaders on timeout
-      final ActorRef lead = context().actorOf(President.props(broadcasts, lastTxid));
+      final ActorRef lead = context().actorOf(DecreePresident.props(cluster, lastTxid));
       lead.tell(new PaxosAPI.Propose<>(broadcast.value, lastTxid), self());
     } else {
       LOG.info("Redirecting message to the current leader, message={}, leader={}", broadcast, currentLeader);
@@ -106,7 +106,7 @@ public final class AtomicBroadcast extends AbstractActor {
       decrees.get(paxosMessage.txid()).tell(paxosMessage, sender());
     } else {
       LOG.info("Created priest for txid={}", paxosMessage.txid());
-      final ActorRef priest = context().actorOf(Priest.props(paxosMessage.txid(), self()));
+      final ActorRef priest = context().actorOf(DecreePriest.props(paxosMessage.txid(), self()));
       priest.tell(paxosMessage, sender());
     }
   }
