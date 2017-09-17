@@ -54,26 +54,6 @@ public class PaxosTest {
   }
 
   @Test
-  public void testDoublePropose() throws Exception {
-    final String prefix = "doublePropose";
-    final List<TestPriest> testPriests = LongStream.range(0, PRIESTS_COUNT)
-            .boxed()
-            .map(l -> testPriest(prefix, l))
-            .collect(toList());
-
-    final Map<Long, ActorPath> priestsPaths = testPriests.stream().collect(toMap(p -> p.id, p -> p.path));
-    final List<TestKit> kits = testPriests.stream().map(p -> p.kit).collect(toList());
-
-    final ActorRef leader = system.actorOf(DecreePresident.props(new Cluster(priestsPaths), 1));
-    leader.tell(new PaxosAPI.Propose<>("VALUE", 1), ActorRef.noSender());
-    kits.forEach(kit -> kit.expectMsg(new PaxosAPI.Decide<>("VALUE", 1)));
-
-    final ActorRef anotherLeader = system.actorOf(DecreePresident.props(new Cluster(priestsPaths), 1));
-    leader.tell(new PaxosAPI.Propose<>("VALUE1", 1), ActorRef.noSender());
-    kits.forEach(kit -> kit.expectMsg(new PaxosAPI.Decide<>("VALUE", 1)));
-  }
-
-  @Test
   public void testMajorityPropose() throws Exception {
     final String prefix = "majorityPropose";
     final List<TestPriest> majorityTestPriests = LongStream.range(0, PRIESTS_COUNT - MINORITY)
@@ -96,39 +76,6 @@ public class PaxosTest {
 
     final ActorRef leader = system.actorOf(DecreePresident.props(new Cluster(priestsPaths), 1));
     leader.tell(new PaxosAPI.Propose<>("VALUE", 1), ActorRef.noSender());
-    majorityKits.forEach(kit -> kit.expectMsg(new PaxosAPI.Decide<>("VALUE", 1)));
-  }
-
-  @Test
-  public void testMajorityDoublePropose() throws Exception {
-    final String prefix = "majorityDoublePropose";
-    final List<TestPriest> majorityTestPriests = LongStream.range(0, PRIESTS_COUNT - MINORITY)
-            .boxed()
-            .map(l -> testPriest(prefix, l))
-            .collect(toList());
-
-    final List<TestPriest> minorityTestPriests = LongStream.range(PRIESTS_COUNT - MINORITY, PRIESTS_COUNT)
-            .boxed()
-            .map(l -> testPriest(prefix, l))
-            .collect(toList());
-
-    final Map<Long, ActorPath> priestsPaths = Stream
-            .concat(majorityTestPriests.stream(), minorityTestPriests.stream())
-            .collect(toMap(p -> p.id, p -> p.path));
-
-    final List<TestKit> majorityKits = majorityTestPriests.stream().map(p -> p.kit).collect(toList());
-    final List<TestKit> allKits = Stream
-            .concat(majorityTestPriests.stream(), minorityTestPriests.stream())
-            .map(p -> p.kit).collect(toList());
-
-    final ActorRef leader = system.actorOf(DecreePresident.props(new Cluster(priestsPaths), 1));
-    leader.tell(new PaxosAPI.Propose<>("VALUE", 1), ActorRef.noSender());
-    allKits.forEach(kit -> kit.expectMsg(new PaxosAPI.Decide<>("VALUE", 1)));
-
-    minorityTestPriests.forEach(p -> p.priest.tell(PoisonPill.getInstance(), ActorRef.noSender()));
-
-    final ActorRef anotherLeader = system.actorOf(DecreePresident.props(new Cluster(priestsPaths), 1));
-    leader.tell(new PaxosAPI.Propose<>("VALUE1", 1), ActorRef.noSender());
     majorityKits.forEach(kit -> kit.expectMsg(new PaxosAPI.Decide<>("VALUE", 1)));
   }
 

@@ -110,6 +110,7 @@ public final class DecreePresident extends AbstractActor {
 
                       if (votes.size() > priests.size() / 2) {
                         priests.forEach(p -> p.tell(new Success(txid, lastTried), self()));
+                        context().stop(self());
                       }
                     })
             .build();
