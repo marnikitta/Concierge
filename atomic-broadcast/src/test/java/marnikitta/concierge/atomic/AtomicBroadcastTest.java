@@ -2,14 +2,11 @@ package marnikitta.concierge.atomic;
 
 import akka.actor.ActorPath;
 import akka.actor.ActorRef;
-import akka.actor.ActorSystem;
 import akka.actor.PoisonPill;
 import akka.testkit.javadsl.TestKit;
-import com.typesafe.config.ConfigFactory;
 import marnikitta.concierge.common.Cluster;
+import marnikitta.concierge.common.ConciergeTest;
 import marnikitta.leader.election.ElectorAPI;
-import org.testng.annotations.AfterSuite;
-import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.Test;
 
 import java.util.List;
@@ -22,20 +19,9 @@ import java.util.stream.Stream;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 
-public class AtomicBroadcastTest {
+public class AtomicBroadcastTest extends ConciergeTest {
   public static final int PRIESTS_COUNT = 17;
   public static final int MINORITY = PRIESTS_COUNT / 2 - 1;
-  private ActorSystem system;
-
-  @BeforeSuite
-  public void initSystem() {
-    system = ActorSystem.create("name", ConfigFactory.parseString("akka.log-dead-letters = 1000"));
-  }
-
-  @AfterSuite
-  public void deinitSystem() {
-    TestKit.shutdownActorSystem(system);
-  }
 
   @Test
   public void simpleLeaderBroadcast() {

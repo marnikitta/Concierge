@@ -2,12 +2,10 @@ package marnikitta.leader.election;
 
 import akka.actor.ActorPath;
 import akka.actor.ActorRef;
-import akka.actor.ActorSystem;
 import akka.actor.PoisonPill;
 import akka.testkit.javadsl.TestKit;
 import marnikitta.concierge.common.Cluster;
-import org.testng.annotations.AfterSuite;
-import org.testng.annotations.BeforeSuite;
+import marnikitta.concierge.common.ConciergeTest;
 import org.testng.annotations.Test;
 
 import java.util.Collections;
@@ -20,19 +18,7 @@ import java.util.stream.LongStream;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toMap;
 
-public class OmegaElectorTest {
-  private ActorSystem system;
-
-  @BeforeSuite
-  public void initSystem() {
-    system = ActorSystem.create();
-  }
-
-  @AfterSuite
-  public void deinitSystem() {
-    TestKit.shutdownActorSystem(system);
-  }
-
+public class OmegaElectorTest extends ConciergeTest {
   @Test
   public void defaultLeader() {
     final int electorsCount = 20;

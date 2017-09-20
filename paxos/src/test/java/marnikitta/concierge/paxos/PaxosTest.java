@@ -2,12 +2,10 @@ package marnikitta.concierge.paxos;
 
 import akka.actor.ActorPath;
 import akka.actor.ActorRef;
-import akka.actor.ActorSystem;
 import akka.actor.PoisonPill;
 import akka.testkit.javadsl.TestKit;
 import marnikitta.concierge.common.Cluster;
-import org.testng.annotations.AfterSuite;
-import org.testng.annotations.BeforeSuite;
+import marnikitta.concierge.common.ConciergeTest;
 import org.testng.annotations.Test;
 import scala.concurrent.duration.Duration;
 
@@ -20,20 +18,9 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 
-public class PaxosTest {
+public class PaxosTest extends ConciergeTest {
   public static final int PRIESTS_COUNT = 17;
   public static final int MINORITY = PRIESTS_COUNT / 2 - 1;
-  private ActorSystem system;
-
-  @BeforeSuite
-  public void initSystem() {
-    system = ActorSystem.create();
-  }
-
-  @AfterSuite
-  public void deinitSystem() {
-    TestKit.shutdownActorSystem(system);
-  }
 
   @Test
   public void testSimplePropose() throws Exception {

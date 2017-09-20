@@ -117,12 +117,7 @@ public final class AtomicBroadcast extends AbstractActorWithStash {
             .match(TellMeYourLedger.class, this::tellMyLedger)
             .match(ElectorAPI.NewLeader.class, this::onNewLeader)
             .match(PaxosMessage.class, this::onPaxosMessage)
-            .match(PaxosAPI.Decide.class, decide -> {
-              onDecide(decide);
-              if (lastDeliveredTxid == lastProposedTxid) {
-                lead();
-              }
-            })
+            .match(PaxosAPI.Decide.class, this::onDecide)
             //syncing specific
             .match(String.class, m -> m.equals("Resync"), m -> sync())
             .match(LearnedDecrees.class, decrees -> {
@@ -134,16 +129,12 @@ public final class AtomicBroadcast extends AbstractActorWithStash {
                 tryDeliver();
                 for (long txid = lastDeliveredTxid + 1; txid <= learnedDecrees.lastKey(); ++txid) {
                   if (!learnedDecrees.containsKey(txid)) {
-                    final ActorRef lead = context().actorOf(DecreePresident.props(cluster, txid));
-                    lead.tell(new PaxosAPI.Propose(OLIVE_DAY, txid), self());
+                    propose(OLIVE_DAY, txid);
                   }
                 }
 
                 lastProposedTxid = learnedDecrees.lastKey();
-
-                if (lastDeliveredTxid == lastProposedTxid) {
-                  lead();
-                }
+                lead();
               }
             })
             .matchAny(m -> stash())
@@ -199,8 +190,12 @@ public final class AtomicBroadcast extends AbstractActorWithStash {
 
   private void onLeaderBroadcast(Broadcast<?> broadcast) {
     lastProposedTxid++;
-    final ActorRef lead = context().actorOf(DecreePresident.props(cluster, lastProposedTxid));
-    lead.tell(new PaxosAPI.Propose(broadcast.value, lastProposedTxid), self());
+    propose(broadcast.value, lastProposedTxid);
+  }
+
+  private void propose(Object decree, long txid) {
+    final ActorRef lead = context().actorOf(DecreePresident.props(cluster, txid));
+    lead.tell(new PaxosAPI.Propose(decree, txid), self());
   }
 
   /**
