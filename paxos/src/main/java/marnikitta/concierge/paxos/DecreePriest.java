@@ -67,7 +67,7 @@ public final class DecreePriest extends AbstractActor {
               })
               .match(Success.class, success -> {
                 if (lastBallot == success.ballotNumber) {
-                  LOG.debug("Learned {} for txid={}", lastVote, txid);
+                  LOG.info("Learned {} for txid={}", lastVote, txid);
                   this.decision = lastVote;
                   subscriber.tell(new PaxosAPI.Decide(lastVote, txid), self());
                   getContext().become(success());

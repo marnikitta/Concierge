@@ -52,7 +52,7 @@ public final class DecreePresident extends AbstractActor {
                     PaxosAPI.Propose.class,
                     propose -> propose.txid == this.txid,
                     propose -> {
-                      LOG.debug("Received proposal={}", propose);
+                      LOG.info("Received proposal={}", propose);
                       this.proposal = propose.value;
                       broadcastNextBallot(1);
                     }
@@ -63,7 +63,7 @@ public final class DecreePresident extends AbstractActor {
   private int lastTried = -1;
 
   private void broadcastNextBallot(int ballotNumber) {
-    LOG.debug("Broadcasting NextBallot lastTried={}, txid={}", ballotNumber, txid);
+    LOG.info("Broadcasting NextBallot lastTried={}, txid={}", ballotNumber, txid);
 
     this.lastTried = ballotNumber;
     priests.forEach(p -> p.tell(new NextBallot(txid, ballotNumber), self()));
@@ -78,11 +78,11 @@ public final class DecreePresident extends AbstractActor {
             .match(LastVote.class,
                     lastVote -> lastVote.ballotNumber == lastTried && lastVote.txid == txid,
                     lastVote -> {
-                      LOG.debug("Received last vote from {}", lastVote);
+                      LOG.info("Received last vote from {}", lastVote);
                       lastVotes.put(sender(), lastVote);
 
                       if (lastVotes.size() > priests.size() / 2) {
-                        LOG.debug("There is a quorum");
+                        LOG.info("There is a quorum");
                         final LastVote winner = Collections.max(lastVotes.values());
 
                         final Object lockedValue;
@@ -90,7 +90,7 @@ public final class DecreePresident extends AbstractActor {
                         if (winner.vote == SpecialValues.BLANK) {
                           lockedValue = proposal;
                         } else if (winner.vote == SpecialValues.OUTDATED_BALLOT_NUMBER) {
-                          LOG.warning("Seems that I have outdated ballot number");
+                          LOG.info("Seems that I have outdated ballot number");
                           broadcastNextBallot(winner.ballotNumber + 1);
                           return;
                         } else {
