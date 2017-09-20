@@ -22,8 +22,8 @@ import static java.util.stream.Collectors.toMap;
 
 public class PaxosTest {
   public static final int PRIESTS_COUNT = 17;
-  private ActorSystem system;
   public static final int MINORITY = PRIESTS_COUNT / 2 - 1;
+  private ActorSystem system;
 
   @BeforeSuite
   public void initSystem() {
@@ -46,11 +46,11 @@ public class PaxosTest {
     final Map<Long, ActorPath> priestsPaths = testPriests.stream().collect(toMap(p -> p.id, p -> p.path));
 
     final ActorRef leader = system.actorOf(DecreePresident.props(new Cluster(priestsPaths), 1));
-    leader.tell(new PaxosAPI.Propose<>("VALUE", 1), ActorRef.noSender());
+    leader.tell(new PaxosAPI.Propose("VALUE", 1), ActorRef.noSender());
 
     final List<TestKit> kits = testPriests.stream().map(p -> p.kit).collect(toList());
 
-    kits.forEach(kit -> kit.expectMsg(new PaxosAPI.Decide<>("VALUE", 1)));
+    kits.forEach(kit -> kit.expectMsg(new PaxosAPI.Decide("VALUE", 1)));
   }
 
   @Test
@@ -75,8 +75,8 @@ public class PaxosTest {
     minorityTestPriests.forEach(p -> p.priest.tell(PoisonPill.getInstance(), ActorRef.noSender()));
 
     final ActorRef leader = system.actorOf(DecreePresident.props(new Cluster(priestsPaths), 1));
-    leader.tell(new PaxosAPI.Propose<>("VALUE", 1), ActorRef.noSender());
-    majorityKits.forEach(kit -> kit.expectMsg(new PaxosAPI.Decide<>("VALUE", 1)));
+    leader.tell(new PaxosAPI.Propose("VALUE", 1), ActorRef.noSender());
+    majorityKits.forEach(kit -> kit.expectMsg(new PaxosAPI.Decide("VALUE", 1)));
   }
 
   @Test
@@ -101,7 +101,7 @@ public class PaxosTest {
     majorityTestPriests.forEach(p -> p.priest.tell(PoisonPill.getInstance(), ActorRef.noSender()));
 
     final ActorRef leader = system.actorOf(DecreePresident.props(new Cluster(priestsPaths), 1));
-    leader.tell(new PaxosAPI.Propose<>("VALUE", 1), ActorRef.noSender());
+    leader.tell(new PaxosAPI.Propose("VALUE", 1), ActorRef.noSender());
     majorityKits.forEach(kit -> kit.expectNoMsg(Duration.create(1, SECONDS)));
   }
 

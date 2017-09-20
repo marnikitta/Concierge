@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static java.util.stream.Collectors.toSet;
+import static marnikitta.concierge.paxos.PaxosMessage.AlreadySucceed;
 import static marnikitta.concierge.paxos.PaxosMessage.BeginBallot;
 import static marnikitta.concierge.paxos.PaxosMessage.LastVote;
 import static marnikitta.concierge.paxos.PaxosMessage.NextBallot;
@@ -51,7 +52,7 @@ public final class DecreePresident extends AbstractActor {
                     PaxosAPI.Propose.class,
                     propose -> propose.txid == this.txid,
                     propose -> {
-                      LOG.info("Received proposal={}", propose);
+                      LOG.debug("Received proposal={}", propose);
                       this.proposal = propose.value;
                       broadcastNextBallot(1);
                     }
@@ -62,47 +63,52 @@ public final class DecreePresident extends AbstractActor {
   private int lastTried = -1;
 
   private void broadcastNextBallot(int ballotNumber) {
-    LOG.info("Broadcasting NextBallot lastTried={}, txid={}", ballotNumber, txid);
+    LOG.debug("Broadcasting NextBallot lastTried={}, txid={}", ballotNumber, txid);
 
     this.lastTried = ballotNumber;
     priests.forEach(p -> p.tell(new NextBallot(txid, ballotNumber), self()));
     getContext().become(nextBallotSent());
   }
 
-  private final Map<ActorRef, LastVote<?>> lastVotes = new HashMap<>();
+  private final Map<ActorRef, LastVote> lastVotes = new HashMap<>();
 
   private Receive nextBallotSent() {
     return ReceiveBuilder.create()
+            .match(AlreadySucceed.class, m -> LOG.warning("Txid={} already succeed", new Long(txid)))
             .match(LastVote.class,
                     lastVote -> lastVote.ballotNumber == lastTried && lastVote.txid == txid,
                     lastVote -> {
+                      LOG.debug("Received last vote from {}", lastVote);
                       lastVotes.put(sender(), lastVote);
 
                       if (lastVotes.size() > priests.size() / 2) {
-                        final LastVote<?> winner = Collections.max(lastVotes.values());
+                        LOG.debug("There is a quorum");
+                        final LastVote winner = Collections.max(lastVotes.values());
 
                         final Object lockedValue;
 
                         if (winner.vote == SpecialValues.BLANK) {
                           lockedValue = proposal;
                         } else if (winner.vote == SpecialValues.OUTDATED_BALLOT_NUMBER) {
+                          LOG.warning("Seems that I have outdated ballot number");
                           broadcastNextBallot(winner.ballotNumber + 1);
                           return;
                         } else {
                           lockedValue = winner.vote;
                         }
 
-                        priests.forEach(p -> p.tell(new BeginBallot<>(txid, lastTried, lockedValue), self()));
+                        priests.forEach(p -> p.tell(new BeginBallot(txid, lastTried, lockedValue), self()));
                         getContext().become(beginBallotSent());
                       }
                     })
             .build();
   }
 
-  private final Set<Voted<?>> votes = new HashSet<>();
+  private final Set<Voted> votes = new HashSet<>();
 
   private Receive beginBallotSent() {
     return ReceiveBuilder.create()
+            .match(AlreadySucceed.class, m -> LOG.warning("Txid={} already succeed", new Long(txid)))
             .match(Voted.class,
                     voted -> voted.ballotNumber == lastTried && voted.txid == txid,
                     voted -> {

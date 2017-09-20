@@ -3,11 +3,11 @@ package marnikitta.concierge.paxos;
 import java.util.Objects;
 
 public interface PaxosAPI {
-  class Propose<T> {
-    public final T value;
+  class Propose {
+    public final Object value;
     public final long txid;
 
-    public Propose(T value, long txid) {
+    public Propose(Object value, long txid) {
       this.value = value;
       this.txid = txid;
     }
@@ -21,11 +21,11 @@ public interface PaxosAPI {
     }
   }
 
-  class Decide<T> {
-    public final T value;
+  class Decide {
+    public final Object value;
     public final long txid;
 
-    public Decide(T value, long txid) {
+    public Decide(Object value, long txid) {
       this.value = value;
       this.txid = txid;
     }
@@ -34,7 +34,7 @@ public interface PaxosAPI {
     public boolean equals(Object o) {
       if (this == o) return true;
       if (o == null || getClass() != o.getClass()) return false;
-      final Decide<?> decide = (Decide<?>) o;
+      final Decide decide = (Decide) o;
       return txid == decide.txid &&
               Objects.equals(value, decide.value);
     }

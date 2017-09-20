@@ -28,12 +28,12 @@ public interface PaxosMessage {
     }
   }
 
-  class LastVote<T> implements PaxosMessage, Comparable<LastVote<?>> {
+  class LastVote implements PaxosMessage, Comparable<LastVote> {
     public final long txid;
     public final int ballotNumber;
-    public final T vote;
+    public final Object vote;
 
-    public LastVote(long txid, int ballotNumber, T vote) {
+    public LastVote(long txid, int ballotNumber, Object vote) {
       this.txid = txid;
       this.ballotNumber = ballotNumber;
       this.vote = vote;
@@ -49,7 +49,7 @@ public interface PaxosMessage {
     }
 
     @Override
-    public int compareTo(@NotNull LastVote<?> o) {
+    public int compareTo(@NotNull LastVote o) {
       return Integer.compare(this.ballotNumber, o.ballotNumber);
     }
 
@@ -59,12 +59,12 @@ public interface PaxosMessage {
     }
   }
 
-  class BeginBallot<T> implements PaxosMessage {
+  class BeginBallot implements PaxosMessage {
     public final long txid;
     public final int ballotNumber;
-    public final T decree;
+    public final Object decree;
 
-    public BeginBallot(long txid, int ballotNumber, T decree) {
+    public BeginBallot(long txid, int ballotNumber, Object decree) {
       this.txid = txid;
       this.ballotNumber = ballotNumber;
       this.decree = decree;
@@ -85,12 +85,12 @@ public interface PaxosMessage {
     }
   }
 
-  class Voted<T> implements PaxosMessage {
+  class Voted implements PaxosMessage {
     public final long txid;
     public final long ballotNumber;
-    public final T vote;
+    public final Object vote;
 
-    public Voted(long txid, long ballotNumber, T vote) {
+    public Voted(long txid, long ballotNumber, Object vote) {
       this.txid = txid;
       this.ballotNumber = ballotNumber;
       this.vote = vote;
@@ -131,6 +131,24 @@ public interface PaxosMessage {
     @Override
     public long txid() {
       return txid;
+    }
+  }
+
+  class AlreadySucceed {
+    public final long txid;
+    public final Object decree;
+
+    public AlreadySucceed(long txid, Object decree) {
+      this.txid = txid;
+      this.decree = decree;
+    }
+
+    @Override
+    public String toString() {
+      return "AlreadySucceed{" +
+              "txid=" + txid +
+              ", decree=" + decree +
+              '}';
     }
   }
 

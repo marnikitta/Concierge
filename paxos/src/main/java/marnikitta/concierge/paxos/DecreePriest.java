@@ -6,7 +6,9 @@ import akka.actor.Props;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import akka.japi.pf.ReceiveBuilder;
+import org.jetbrains.annotations.Nullable;
 
+import static marnikitta.concierge.paxos.PaxosMessage.AlreadySucceed;
 import static marnikitta.concierge.paxos.PaxosMessage.BeginBallot;
 import static marnikitta.concierge.paxos.PaxosMessage.LastVote;
 import static marnikitta.concierge.paxos.PaxosMessage.NextBallot;
@@ -18,6 +20,9 @@ public final class DecreePriest extends AbstractActor {
   private final LoggingAdapter LOG = Logging.getLogger(this);
   private final ActorRef subscriber;
   private final long txid;
+
+  @Nullable
+  private Object decision = null;
 
   private Object lastVote = SpecialValues.BLANK;
   private int lastBallot = 0;
@@ -33,38 +38,55 @@ public final class DecreePriest extends AbstractActor {
 
   @Override
   public Receive createReceive() {
-    return ReceiveBuilder.create()
-            .match(NextBallot.class, nextBallot -> {
-              if (nextBallot.ballotNumber > lastBallot) {
-                lastBallot = nextBallot.ballotNumber;
-                sender().tell(new LastVote<>(txid, lastBallot, lastVote), self());
-              } else {
-                sender().tell(new LastVote<>(txid, lastBallot, SpecialValues.OUTDATED_BALLOT_NUMBER), self());
-                LOG.warning(
-                        "Proposer has outdated ballotNumber number proposer={}, ballotNumber={}, currentBallot={}",
-                        sender(), nextBallot.ballotNumber, lastBallot
-                );
-              }
-            })
-            .match(BeginBallot.class, beginBallot -> {
-              //FIXME: equal ballotNumber numbers may cause collisions, but they shouldn't pass NextBallot
-              if (beginBallot.ballotNumber == lastBallot) {
-                lastVote = beginBallot.decree;
-                sender().tell(new Voted<>(txid, beginBallot.ballotNumber, beginBallot.decree), self());
-              } else {
-                sender().tell(new Voted<>(txid, lastBallot, SpecialValues.OUTDATED_BALLOT_NUMBER), self());
-                LOG.warning(
-                        "Proposer has outdated ballotNumber number proposer={}, ballotNumber={}, currentBallot={}",
-                        sender(), beginBallot.ballotNumber, lastBallot
-                );
-              }
-            })
-            .match(Success.class, success -> {
-              LOG.info("Learned {} for txid={}", lastVote, txid);
-              subscriber.tell(new PaxosAPI.Decide<>(lastVote, txid), self());
-              context().stop(self());
-            })
-            .build();
+    if (decision == null) {
+      return ReceiveBuilder.create()
+              .match(NextBallot.class, nextBallot -> {
+                if (nextBallot.ballotNumber > lastBallot) {
+                  lastBallot = nextBallot.ballotNumber;
+                  sender().tell(new LastVote(txid, lastBallot, lastVote), self());
+                } else {
+                  sender().tell(new LastVote(txid, lastBallot, SpecialValues.OUTDATED_BALLOT_NUMBER), self());
+                  LOG.warning(
+                          "NextBallot: Proposer has outdated ballotNumber number proposer={}, ballotNumber={}, currentBallot={}",
+                          sender(), nextBallot.ballotNumber, lastBallot
+                  );
+                }
+              })
+              .match(BeginBallot.class, beginBallot -> {
+                //FIXME: equal ballotNumber numbers may cause collisions, but they shouldn't pass NextBallot
+                if (beginBallot.ballotNumber == lastBallot) {
+                  lastVote = beginBallot.decree;
+                  sender().tell(new Voted(txid, beginBallot.ballotNumber, beginBallot.decree), self());
+                } else {
+                  sender().tell(new Voted(txid, lastBallot, SpecialValues.OUTDATED_BALLOT_NUMBER), self());
+                  LOG.warning(
+                          "BeginBallot: Proposer has outdated ballotNumber number proposer={}, ballotNumber={}, currentBallot={}",
+                          sender(), beginBallot.ballotNumber, lastBallot
+                  );
+                }
+              })
+              .match(Success.class, success -> {
+                if (lastBallot == success.ballotNumber) {
+                  LOG.debug("Learned {} for txid={}", lastVote, txid);
+                  this.decision = lastVote;
+                  subscriber.tell(new PaxosAPI.Decide(lastVote, txid), self());
+                  getContext().become(success());
+                } else {
+                  LOG.warning(
+                          "Success txid doesn't match last vote's. Expected: {}, got: {}",
+                          lastBallot, success.ballotNumber
+                  );
+                }
+              })
+              .build();
+    } else {
+      return success();
+    }
+  }
 
+  private Receive success() {
+    return ReceiveBuilder.create()
+            .matchAny(m -> sender().tell(new AlreadySucceed(this.txid, decision), self()))
+            .build();
   }
 }
