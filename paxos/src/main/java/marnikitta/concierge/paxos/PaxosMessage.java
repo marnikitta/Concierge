@@ -113,19 +113,11 @@ public interface PaxosMessage {
 
   class Success implements PaxosMessage {
     public final long txid;
-    public final long ballotNumber;
+    public final Object decree;
 
-    public Success(long txid, long ballotNumber) {
+    public Success(long txid, Object decree) {
       this.txid = txid;
-      this.ballotNumber = ballotNumber;
-    }
-
-    @Override
-    public String toString() {
-      return "Success{" +
-              "txid=" + txid +
-              ", ballotNumber=" + ballotNumber +
-              '}';
+      this.decree = decree;
     }
 
     @Override

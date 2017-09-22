@@ -74,7 +74,7 @@ public final class DecreePresident extends AbstractActor {
 
   private Receive nextBallotSent() {
     return ReceiveBuilder.create()
-            .match(AlreadySucceed.class, m -> LOG.warning("Txid={} already succeed", new Long(txid)))
+            .match(AlreadySucceed.class, this::onAlreadySucceed)
             .match(LastVote.class,
                     lastVote -> lastVote.ballotNumber == lastTried && lastVote.txid == txid,
                     lastVote -> {
@@ -104,18 +104,24 @@ public final class DecreePresident extends AbstractActor {
             .build();
   }
 
+  private void onAlreadySucceed(AlreadySucceed alreadySucceed) {
+    LOG.warning("Txid={} already succeed", alreadySucceed.txid);
+    priests.forEach(p -> p.tell(new Success(txid, alreadySucceed.decree), self()));
+    context().stop(self());
+  }
+
   private final Set<Voted> votes = new HashSet<>();
 
   private Receive beginBallotSent() {
     return ReceiveBuilder.create()
-            .match(AlreadySucceed.class, m -> LOG.warning("Txid={} already succeed", new Long(txid)))
+            .match(AlreadySucceed.class, this::onAlreadySucceed)
             .match(Voted.class,
                     voted -> voted.ballotNumber == lastTried && voted.txid == txid,
                     voted -> {
                       votes.add(voted);
 
                       if (votes.size() > priests.size() / 2) {
-                        priests.forEach(p -> p.tell(new Success(txid, lastTried), self()));
+                        priests.forEach(p -> p.tell(new Success(txid, voted.vote), self()));
                         context().stop(self());
                       }
                     })

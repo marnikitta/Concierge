@@ -66,17 +66,10 @@ public final class DecreePriest extends AbstractActor {
                 }
               })
               .match(Success.class, success -> {
-                if (lastBallot == success.ballotNumber) {
-                  LOG.info("Learned {} for txid={}", lastVote, txid);
-                  this.decision = lastVote;
-                  subscriber.tell(new PaxosAPI.Decide(lastVote, txid), self());
-                  getContext().become(success());
-                } else {
-                  LOG.warning(
-                          "Success txid doesn't match last vote's. Expected: {}, got: {}",
-                          lastBallot, success.ballotNumber
-                  );
-                }
+                LOG.info("Learned {} for txid={}", success.decree, txid);
+                decision = success.decree;
+                subscriber.tell(new PaxosAPI.Decide(decision, txid), self());
+                getContext().become(success());
               })
               .build();
     } else {
@@ -86,7 +79,8 @@ public final class DecreePriest extends AbstractActor {
 
   private Receive success() {
     return ReceiveBuilder.create()
-            .matchAny(m -> sender().tell(new AlreadySucceed(this.txid, decision), self()))
+            .match(Success.class, m -> {})
+            .matchAny(m -> sender().tell(new AlreadySucceed(txid, decision), self()))
             .build();
   }
 }
