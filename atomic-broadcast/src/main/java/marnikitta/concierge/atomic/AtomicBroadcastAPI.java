@@ -7,25 +7,10 @@ import java.util.Objects;
 import java.util.Set;
 
 public interface AtomicBroadcastAPI {
-  class RegisterBroadcasts {
-    public final Set<ActorRef> broadcasts;
+  class Broadcast {
+    public final Object value;
 
-    public RegisterBroadcasts(Set<ActorRef> broadcasts) {
-      this.broadcasts = new HashSet<>(broadcasts);
-    }
-
-    @Override
-    public String toString() {
-      return "RegisterBroadcasts{" +
-              "broadcasts=" + broadcasts +
-              '}';
-    }
-  }
-
-  class Broadcast<T> {
-    public final T value;
-
-    public Broadcast(T value) {
+    public Broadcast(Object value) {
       this.value = value;
     }
 
@@ -40,7 +25,7 @@ public interface AtomicBroadcastAPI {
     public boolean equals(Object o) {
       if (this == o) return true;
       if (o == null || getClass() != o.getClass()) return false;
-      final Broadcast<?> broadcast = (Broadcast<?>) o;
+      final Broadcast broadcast = (Broadcast) o;
       return Objects.equals(value, broadcast.value);
     }
 
@@ -50,10 +35,10 @@ public interface AtomicBroadcastAPI {
     }
   }
 
-  class Deliver<T> {
-    public final T value;
+  class Deliver {
+    public final Object value;
 
-    public Deliver(T value) {
+    public Deliver(Object value) {
       this.value = value;
     }
 
@@ -68,7 +53,7 @@ public interface AtomicBroadcastAPI {
     public boolean equals(Object o) {
       if (this == o) return true;
       if (o == null || getClass() != o.getClass()) return false;
-      final Deliver<?> deliver = (Deliver<?>) o;
+      final Deliver deliver = (Deliver) o;
       return Objects.equals(value, deliver.value);
     }
 
