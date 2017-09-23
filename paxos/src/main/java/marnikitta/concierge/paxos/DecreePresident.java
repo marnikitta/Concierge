@@ -50,7 +50,7 @@ public final class DecreePresident extends AbstractActor {
     return ReceiveBuilder.create()
             .match(
                     PaxosAPI.Propose.class,
-                    propose -> propose.txid == this.txid,
+                    propose -> propose.txid == txid,
                     propose -> {
                       LOG.info("Received proposal={}", propose);
                       this.proposal = propose.value;

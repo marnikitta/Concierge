@@ -24,14 +24,12 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static marnikitta.failure.detector.DetectorAPI.Restore;
 import static marnikitta.failure.detector.DetectorAPI.Suspect;
 import static marnikitta.failure.detector.DetectorMessages.*;
-import static marnikitta.failure.detector.DetectorMessages.CHECK_HEARTBEATS;
-import static marnikitta.failure.detector.DetectorMessages.SEND_HEARTBEAT;
 
 /**
  * Eventually strong failure-detector as described in
  * "Unreliable failure detectors for Reliable Distributed Systems", Chandra and Toueg
  */
-public class EventuallyStrongDetector extends AbstractActor {
+public final class EventuallyStrongDetector extends AbstractActor {
   public static final long HEARTBEAT_DELAY = MILLISECONDS.toNanos(200);
 
   private final LoggingAdapter LOG = Logging.getLogger(this);

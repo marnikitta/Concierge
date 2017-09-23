@@ -2,7 +2,6 @@ package marnikitta.leader.election;
 
 import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
-import akka.actor.Identify;
 import akka.actor.Props;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
@@ -10,16 +9,14 @@ import akka.japi.pf.ReceiveBuilder;
 import marnikitta.concierge.common.Cluster;
 import marnikitta.failure.detector.EventuallyStrongDetector;
 
-import java.util.Collections;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-import static java.util.Collections.*;
 import static marnikitta.failure.detector.DetectorAPI.Restore;
 import static marnikitta.failure.detector.DetectorAPI.Suspect;
 import static marnikitta.leader.election.ElectorAPI.NewLeader;
 
-public class OmegaElector extends AbstractActor {
+public final class OmegaElector extends AbstractActor {
   private final LoggingAdapter LOG = Logging.getLogger(this);
 
   private final ActorRef subscriber;

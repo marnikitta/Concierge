@@ -1,10 +1,6 @@
 package marnikitta.concierge.atomic;
 
-import akka.actor.ActorRef;
-
-import java.util.HashSet;
 import java.util.Objects;
-import java.util.Set;
 
 public interface AtomicBroadcastAPI {
   class Broadcast {

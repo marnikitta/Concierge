@@ -50,7 +50,7 @@ public interface PaxosMessage {
 
     @Override
     public int compareTo(@NotNull LastVote o) {
-      return Integer.compare(this.ballotNumber, o.ballotNumber);
+      return Integer.compare(ballotNumber, o.ballotNumber);
     }
 
     @Override

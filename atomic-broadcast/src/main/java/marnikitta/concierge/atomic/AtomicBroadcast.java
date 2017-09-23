@@ -61,11 +61,8 @@ public final class AtomicBroadcast extends AbstractActor {
 
   private final NavigableMap<Long, Object> learnedDecrees = new TreeMap<>();
 
-  {
-    learnedDecrees.put(-1L, OLIVE_DAY);
-  }
-
   private AtomicBroadcast(ActorRef subscriber, Cluster cluster) {
+    learnedDecrees.put(-1L, OLIVE_DAY);
     this.subscriber = subscriber;
     this.cluster = cluster;
 
