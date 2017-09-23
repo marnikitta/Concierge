@@ -16,5 +16,6 @@
         <module>paxos</module>
         <module>atomic-broadcast</module>
         <module>common</module>
+        <module>kv</module>
     </modules>
 </project>
