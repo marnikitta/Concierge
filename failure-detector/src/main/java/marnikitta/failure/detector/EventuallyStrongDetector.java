@@ -8,14 +8,14 @@ import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import akka.japi.pf.ReceiveBuilder;
 import gnu.trove.map.TLongLongMap;
-import gnu.trove.map.TLongObjectMap;
 import gnu.trove.map.hash.TLongLongHashMap;
-import gnu.trove.map.hash.TLongObjectHashMap;
 import marnikitta.concierge.common.Cluster;
 import scala.concurrent.duration.Duration;
 
+import java.util.NavigableMap;
 import java.util.Optional;
 import java.util.SortedSet;
+import java.util.TreeMap;
 import java.util.TreeSet;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -37,7 +37,7 @@ public class EventuallyStrongDetector extends AbstractActor {
   private final LoggingAdapter LOG = Logging.getLogger(this);
   private final long id;
 
-  private final TLongObjectMap<ActorSelection> detectors = new TLongObjectHashMap<>();
+  private final NavigableMap<Long, ActorSelection> detectors = new TreeMap<>();
 
   private final SortedSet<Long> suspected = new TreeSet<>();
 
@@ -97,7 +97,7 @@ public class EventuallyStrongDetector extends AbstractActor {
   }
 
   private void sendHeartbeats() {
-    for (ActorSelection ref : detectors.valueCollection()) {
+    for (ActorSelection ref : detectors.values()) {
       ref.tell(new Heartbeat(id), self());
     }
   }
@@ -118,7 +118,7 @@ public class EventuallyStrongDetector extends AbstractActor {
   private void checkHeartbeats() {
     final long now = System.nanoTime();
     //detectors are iterated in sorted order. If multiple detectors the would be detected in sorted order
-    for (long i : detectors.keys()) {
+    for (long i : detectors.navigableKeySet()) {
       if (now - lastBeat.get(i) > currentDelay.get(i) && !suspected.contains(i)) {
         LOG.info("Suspected {}", i);
         suspected.add(i);
