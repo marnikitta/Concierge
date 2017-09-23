@@ -10,7 +10,7 @@ distributed systems concepts
 1. __[✔]__ Implement _eventually strong_ failure detector. Timeout-based
 2. __[✔]__ Implement Ω leader elector. Monarchy (highest non-suspected pid wins)
 3. __[✔]__ Implement Paxos consensus algorithm
-4. __[ ]__ Build atomic broadcast on top of the consensus layer
+4. __[✔]__ Build atomic broadcast on top of the consensus layer
 5. __[ ]__ Deliver ledger to the newly elected leader
 6. __[ ]__ Upgrade algorithms from fail-stop to fail-restore model
 7. __[ ]__ Implement KV-storage using state-machine replication
