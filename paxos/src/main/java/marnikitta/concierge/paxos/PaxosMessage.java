@@ -6,8 +6,8 @@ public interface PaxosMessage {
   long txid();
 
   class NextBallot implements PaxosMessage {
-    public final long txid;
-    public final int ballotNumber;
+    private final long txid;
+    private final int ballotNumber;
 
     public NextBallot(long txid, int ballotNumber) {
       this.txid = txid;
@@ -17,8 +17,8 @@ public interface PaxosMessage {
     @Override
     public String toString() {
       return "NextBallot{" +
-              "txid=" + txid +
-              ", ballotNumber=" + ballotNumber +
+              "txid=" + txid() +
+              ", ballotNumber=" + ballotNumber() +
               '}';
     }
 
@@ -26,12 +26,16 @@ public interface PaxosMessage {
     public long txid() {
       return txid;
     }
+
+    public int ballotNumber() {
+      return ballotNumber;
+    }
   }
 
   class LastVote implements PaxosMessage, Comparable<LastVote> {
-    public final long txid;
-    public final int ballotNumber;
-    public final Object vote;
+    private final long txid;
+    private final int ballotNumber;
+    private final Object vote;
 
     public LastVote(long txid, int ballotNumber, Object vote) {
       this.txid = txid;
@@ -42,27 +46,35 @@ public interface PaxosMessage {
     @Override
     public String toString() {
       return "LastVote{" +
-              "txid=" + txid +
-              ", ballotNumber=" + ballotNumber +
-              ", vote=" + vote +
+              "txid=" + txid() +
+              ", ballotNumber=" + ballotNumber() +
+              ", vote=" + vote() +
               '}';
     }
 
     @Override
     public int compareTo(@NotNull LastVote o) {
-      return Integer.compare(ballotNumber, o.ballotNumber);
+      return Integer.compare(ballotNumber(), o.ballotNumber());
     }
 
     @Override
     public long txid() {
       return txid;
     }
+
+    public int ballotNumber() {
+      return ballotNumber;
+    }
+
+    public Object vote() {
+      return vote;
+    }
   }
 
   class BeginBallot implements PaxosMessage {
-    public final long txid;
-    public final int ballotNumber;
-    public final Object decree;
+    private final long txid;
+    private final int ballotNumber;
+    private final Object decree;
 
     public BeginBallot(long txid, int ballotNumber, Object decree) {
       this.txid = txid;
@@ -73,9 +85,9 @@ public interface PaxosMessage {
     @Override
     public String toString() {
       return "BeginBallot{" +
-              "txid=" + txid +
-              ", ballotNumber=" + ballotNumber +
-              ", vote=" + decree +
+              "txid=" + txid() +
+              ", ballotNumber=" + ballotNumber() +
+              ", vote=" + decree() +
               '}';
     }
 
@@ -83,12 +95,20 @@ public interface PaxosMessage {
     public long txid() {
       return txid;
     }
+
+    public int ballotNumber() {
+      return ballotNumber;
+    }
+
+    public Object decree() {
+      return decree;
+    }
   }
 
   class Voted implements PaxosMessage {
-    public final long txid;
-    public final long ballotNumber;
-    public final Object vote;
+    private final long txid;
+    private final long ballotNumber;
+    private final Object vote;
 
     public Voted(long txid, long ballotNumber, Object vote) {
       this.txid = txid;
@@ -99,9 +119,9 @@ public interface PaxosMessage {
     @Override
     public String toString() {
       return "Voted{" +
-              "txid=" + txid +
-              ", ballotNumber=" + ballotNumber +
-              ", vote=" + vote +
+              "txid=" + txid() +
+              ", ballotNumber=" + ballotNumber() +
+              ", vote=" + vote() +
               '}';
     }
 
@@ -109,11 +129,19 @@ public interface PaxosMessage {
     public long txid() {
       return txid;
     }
+
+    public long ballotNumber() {
+      return ballotNumber;
+    }
+
+    public Object vote() {
+      return vote;
+    }
   }
 
   class Success implements PaxosMessage {
-    public final long txid;
-    public final Object decree;
+    private final long txid;
+    private final Object decree;
 
     public Success(long txid, Object decree) {
       this.txid = txid;
@@ -124,11 +152,15 @@ public interface PaxosMessage {
     public long txid() {
       return txid;
     }
+
+    public Object decree() {
+      return decree;
+    }
   }
 
   class AlreadySucceed {
-    public final long txid;
-    public final Object decree;
+    private final long txid;
+    private final Object decree;
 
     public AlreadySucceed(long txid, Object decree) {
       this.txid = txid;
@@ -138,9 +170,17 @@ public interface PaxosMessage {
     @Override
     public String toString() {
       return "AlreadySucceed{" +
-              "txid=" + txid +
-              ", decree=" + decree +
+              "txid=" + txid() +
+              ", decree=" + decree() +
               '}';
+    }
+
+    public long txid() {
+      return txid;
+    }
+
+    public Object decree() {
+      return decree;
     }
   }
 

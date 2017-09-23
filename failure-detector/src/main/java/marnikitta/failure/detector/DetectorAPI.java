@@ -2,7 +2,7 @@ package marnikitta.failure.detector;
 
 public interface DetectorAPI {
   class Suspect {
-    public final long theSuspect;
+    private final long theSuspect;
 
     public Suspect(long theSuspect) {
       this.theSuspect = theSuspect;
@@ -10,7 +10,11 @@ public interface DetectorAPI {
 
     @Override
     public String toString() {
-      return "Suspect{" + "theSuspect=" + theSuspect + '}';
+      return "Suspect{" + "theSuspect=" + theSuspect() + '}';
+    }
+
+    public long theSuspect() {
+      return theSuspect;
     }
   }
 

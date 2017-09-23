@@ -151,7 +151,7 @@ public class AtomicBroadcastTest extends ConciergeTest {
               Duration.create(1, MINUTES),
               Duration.create(10, SECONDS),
               1000,
-              o -> received.add((String) ((AtomicBroadcastAPI.Deliver) o).value)
+              o -> received.add((String) ((AtomicBroadcastAPI.Deliver) o).value())
       );
 
       resultSet.add(received);

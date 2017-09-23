@@ -103,14 +103,14 @@ public final class EventuallyStrongDetector extends AbstractActor {
   private void onHeartbeat(Heartbeat heartbeat) {
     final long now = System.nanoTime();
 
-    if (suspected.contains(heartbeat.id)) {
-      context().parent().tell(new Restore(heartbeat.id), self());
-      currentDelay.put(heartbeat.id, currentDelay.get(heartbeat.id) + HEARTBEAT_DELAY);
-      LOG.info("Restored={}, currentDelay={}us", id, currentDelay.get(heartbeat.id));
-      suspected.remove(heartbeat.id);
+    if (suspected.contains(heartbeat.id())) {
+      context().parent().tell(new Restore(heartbeat.id()), self());
+      currentDelay.put(heartbeat.id(), currentDelay.get(heartbeat.id()) + HEARTBEAT_DELAY);
+      LOG.info("Restored={}, currentDelay={}us", id, currentDelay.get(heartbeat.id()));
+      suspected.remove(heartbeat.id());
     }
 
-    lastBeat.put(heartbeat.id, now);
+    lastBeat.put(heartbeat.id(), now);
   }
 
   private void checkHeartbeats() {
@@ -131,7 +131,7 @@ enum DetectorMessages {
   SEND_HEARTBEAT;
 
   public static class Heartbeat {
-    public final long id;
+    private final long id;
 
     public Heartbeat(long id) {
       this.id = id;
@@ -140,8 +140,12 @@ enum DetectorMessages {
     @Override
     public String toString() {
       return "Heartbeat{" +
-              "id=" + id +
+              "id=" + id() +
               '}';
+    }
+
+    public long id() {
+      return id;
     }
   }
 }

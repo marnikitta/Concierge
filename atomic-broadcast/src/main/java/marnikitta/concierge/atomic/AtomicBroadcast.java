@@ -84,7 +84,7 @@ public final class AtomicBroadcast extends AbstractActor {
   }
 
   private void onBroadcast(Broadcast broadcast) {
-    broadcastsDeque.offer(broadcast.value);
+    broadcastsDeque.offer(broadcast.value());
     tryBroadcastFromQueue();
   }
 
@@ -117,17 +117,17 @@ public final class AtomicBroadcast extends AbstractActor {
   }
 
   private void onDecide(PaxosAPI.Decide decide) {
-    if (decide.txid <= lastDeliveredTxid) {
-      LOG.error("fromTxid={} is already delivered", decide.txid);
+    if (decide.txid() <= lastDeliveredTxid) {
+      LOG.error("fromTxid={} is already delivered", decide.txid());
     } else {
-      LOG.info("Learned decree for txid={}", decide.txid);
-      learnedDecrees.put(decide.txid, decide.value);
+      LOG.info("Learned decree for txid={}", decide.txid());
+      learnedDecrees.put(decide.txid(), decide.value());
       tryDeliver();
     }
 
-    if (inFlightDecree != null && decide.txid == inFlightTxid) {
-      if (inFlightDecree.equals(decide.value)) {
-        LOG.info("Decision for awaited decree is complete txid={}", decide.txid);
+    if (inFlightDecree != null && decide.txid() == inFlightTxid) {
+      if (inFlightDecree.equals(decide.value())) {
+        LOG.info("Decision for awaited decree is complete txid={}", decide.txid());
       } else {
         LOG.warning("Somebody broadcasts before me, retry");
         broadcastsDeque.offerFirst(inFlightDecree);

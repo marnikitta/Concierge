@@ -50,10 +50,10 @@ public final class DecreePresident extends AbstractActor {
     return ReceiveBuilder.create()
             .match(
                     PaxosAPI.Propose.class,
-                    propose -> propose.txid == txid,
+                    propose -> propose.txid() == txid,
                     propose -> {
                       LOG.info("Received proposal={}", propose);
-                      this.proposal = propose.value;
+                      this.proposal = propose.value();
                       broadcastNextBallot(1);
                     }
             )
@@ -76,7 +76,7 @@ public final class DecreePresident extends AbstractActor {
     return ReceiveBuilder.create()
             .match(AlreadySucceed.class, this::onAlreadySucceed)
             .match(LastVote.class,
-                    lastVote -> lastVote.ballotNumber == lastTried && lastVote.txid == txid,
+                    lastVote -> lastVote.ballotNumber() == lastTried && lastVote.txid() == txid,
                     lastVote -> {
                       LOG.info("Received last vote from {}", lastVote);
                       lastVotes.put(sender(), lastVote);
@@ -87,14 +87,14 @@ public final class DecreePresident extends AbstractActor {
 
                         final Object lockedValue;
 
-                        if (winner.vote == SpecialValues.BLANK) {
+                        if (winner.vote() == SpecialValues.BLANK) {
                           lockedValue = proposal;
-                        } else if (winner.vote == SpecialValues.OUTDATED_BALLOT_NUMBER) {
+                        } else if (winner.vote() == SpecialValues.OUTDATED_BALLOT_NUMBER) {
                           LOG.info("Seems that I have outdated ballot number");
-                          broadcastNextBallot(winner.ballotNumber + 1);
+                          broadcastNextBallot(winner.ballotNumber() + 1);
                           return;
                         } else {
-                          lockedValue = winner.vote;
+                          lockedValue = winner.vote();
                         }
 
                         priests.forEach(p -> p.tell(new BeginBallot(txid, lastTried, lockedValue), self()));
@@ -105,8 +105,8 @@ public final class DecreePresident extends AbstractActor {
   }
 
   private void onAlreadySucceed(AlreadySucceed alreadySucceed) {
-    LOG.warning("Txid={} already succeed", alreadySucceed.txid);
-    priests.forEach(p -> p.tell(new Success(txid, alreadySucceed.decree), self()));
+    LOG.warning("Txid={} already succeed", alreadySucceed.txid());
+    priests.forEach(p -> p.tell(new Success(txid, alreadySucceed.decree()), self()));
     context().stop(self());
   }
 
@@ -116,12 +116,12 @@ public final class DecreePresident extends AbstractActor {
     return ReceiveBuilder.create()
             .match(AlreadySucceed.class, this::onAlreadySucceed)
             .match(Voted.class,
-                    voted -> voted.ballotNumber == lastTried && voted.txid == txid,
+                    voted -> voted.ballotNumber() == lastTried && voted.txid() == txid,
                     voted -> {
                       votes.add(voted);
 
                       if (votes.size() > priests.size() / 2) {
-                        priests.forEach(p -> p.tell(new Success(txid, voted.vote), self()));
+                        priests.forEach(p -> p.tell(new Success(txid, voted.vote()), self()));
                         context().stop(self());
                       }
                     })

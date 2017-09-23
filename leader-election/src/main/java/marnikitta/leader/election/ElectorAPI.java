@@ -4,7 +4,7 @@ import java.util.Objects;
 
 public interface ElectorAPI {
   class NewLeader {
-    public final long leader;
+    private final long leader;
 
     public NewLeader(long leader) {
       this.leader = leader;
@@ -12,7 +12,7 @@ public interface ElectorAPI {
 
     @Override
     public String toString() {
-      return "NewLeader{" + "leader=" + leader + '}';
+      return "NewLeader{" + "leader=" + leader() + '}';
     }
 
     @Override
@@ -20,12 +20,16 @@ public interface ElectorAPI {
       if (this == o) return true;
       if (o == null || getClass() != o.getClass()) return false;
       final NewLeader newLeader = (NewLeader) o;
-      return leader == newLeader.leader;
+      return leader() == newLeader.leader();
     }
 
     @Override
     public int hashCode() {
-      return Objects.hash(leader);
+      return Objects.hash(leader());
+    }
+
+    public long leader() {
+      return leader;
     }
   }
 }

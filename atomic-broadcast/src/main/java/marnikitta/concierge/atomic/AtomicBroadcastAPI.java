@@ -4,7 +4,7 @@ import java.util.Objects;
 
 public interface AtomicBroadcastAPI {
   class Broadcast {
-    public final Object value;
+    private final Object value;
 
     public Broadcast(Object value) {
       this.value = value;
@@ -13,7 +13,7 @@ public interface AtomicBroadcastAPI {
     @Override
     public String toString() {
       return "Broadcast{" +
-              "value=" + value +
+              "value=" + value() +
               '}';
     }
 
@@ -22,17 +22,21 @@ public interface AtomicBroadcastAPI {
       if (this == o) return true;
       if (o == null || getClass() != o.getClass()) return false;
       final Broadcast broadcast = (Broadcast) o;
-      return Objects.equals(value, broadcast.value);
+      return Objects.equals(value(), broadcast.value());
     }
 
     @Override
     public int hashCode() {
-      return Objects.hash(value);
+      return Objects.hash(value());
+    }
+
+    public Object value() {
+      return value;
     }
   }
 
   class Deliver {
-    public final Object value;
+    private final Object value;
 
     public Deliver(Object value) {
       this.value = value;
@@ -41,7 +45,7 @@ public interface AtomicBroadcastAPI {
     @Override
     public String toString() {
       return "Deliver{" +
-              "value=" + value +
+              "value=" + value() +
               '}';
     }
 
@@ -50,12 +54,16 @@ public interface AtomicBroadcastAPI {
       if (this == o) return true;
       if (o == null || getClass() != o.getClass()) return false;
       final Deliver deliver = (Deliver) o;
-      return Objects.equals(value, deliver.value);
+      return Objects.equals(value(), deliver.value());
     }
 
     @Override
     public int hashCode() {
-      return Objects.hash(value);
+      return Objects.hash(value());
+    }
+
+    public Object value() {
+      return value;
     }
   }
 }

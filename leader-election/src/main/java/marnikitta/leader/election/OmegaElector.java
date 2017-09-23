@@ -52,12 +52,12 @@ public final class OmegaElector extends AbstractActor {
   }
 
   private void onSuspect(Suspect suspect) {
-    if (!aliveElectors.contains(suspect.theSuspect)) {
+    if (!aliveElectors.contains(suspect.theSuspect())) {
       throw new IllegalStateException("Double suspecting, probably incorrect failure detector implementation");
     }
 
-    if (aliveElectors.first().equals(suspect.theSuspect)) {
-      aliveElectors.remove(suspect.theSuspect);
+    if (aliveElectors.first().equals(suspect.theSuspect())) {
+      aliveElectors.remove(suspect.theSuspect());
       if (aliveElectors.isEmpty()) {
         LOG.warning("There are no electors alive...");
       } else {
@@ -65,7 +65,7 @@ public final class OmegaElector extends AbstractActor {
         subscriber.tell(new NewLeader(aliveElectors.first()), self());
       }
     } else {
-      aliveElectors.remove(suspect.theSuspect);
+      aliveElectors.remove(suspect.theSuspect());
     }
   }
 
