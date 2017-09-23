@@ -24,10 +24,10 @@ public final class OmegaElector extends AbstractActor {
   private final SortedSet<Long> aliveElectors;
 
   private OmegaElector(long id, ActorRef subscriber, Cluster cluster) {
-    this.aliveElectors = new TreeSet<>(cluster.paths.keySet());
+    this.aliveElectors = new TreeSet<>(cluster.paths().keySet());
     this.subscriber = subscriber;
     context().actorOf(
-            EventuallyStrongDetector.props(id, new Cluster(cluster.paths, "detector")),
+            EventuallyStrongDetector.props(id, new Cluster(cluster.paths(), "detector")),
             "detector"
     );
   }

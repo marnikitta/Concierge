@@ -62,10 +62,10 @@ public final class EventuallyStrongDetector extends AbstractActor {
 
   private EventuallyStrongDetector(long id, Cluster cluster) {
     this.id = id;
-    cluster.paths.forEach((i, path) -> detectors.put(i, context().actorSelection(path)));
+    cluster.paths().forEach((i, path) -> detectors.put(i, context().actorSelection(path)));
 
-    cluster.paths.keySet().forEach(i -> lastBeat.put(i, System.nanoTime() + SECONDS.toNanos(10)));
-    cluster.paths.keySet().forEach(i -> currentDelay.put(i, HEARTBEAT_DELAY * 2));
+    cluster.paths().keySet().forEach(i -> lastBeat.put(i, System.nanoTime() + SECONDS.toNanos(10)));
+    cluster.paths().keySet().forEach(i -> currentDelay.put(i, HEARTBEAT_DELAY * 2));
   }
 
   public static Props props(long id, Cluster cluster) {

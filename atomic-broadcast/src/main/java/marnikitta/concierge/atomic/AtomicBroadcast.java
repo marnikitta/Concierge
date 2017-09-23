@@ -67,7 +67,7 @@ public final class AtomicBroadcast extends AbstractActor {
     this.cluster = cluster;
 
     this.broadcasts = new TLongObjectHashMap<>();
-    cluster.paths.forEach((i, p) -> broadcasts.put(i, context().actorSelection(p)));
+    cluster.paths().forEach((i, p) -> broadcasts.put(i, context().actorSelection(p)));
   }
 
   public static Props props(ActorRef subscriber, Cluster cluster) {

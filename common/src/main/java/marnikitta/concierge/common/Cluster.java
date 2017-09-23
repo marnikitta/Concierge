@@ -8,7 +8,7 @@ import java.util.Map;
 import static java.util.stream.Collectors.toMap;
 
 public final class Cluster {
-  public final Map<Long, ActorPath> paths;
+  private final Map<Long, ActorPath> paths;
 
   public Cluster(Map<Long, ActorPath> paths, String suffix) {
     this.paths = paths.entrySet().stream().collect(toMap(Map.Entry::getKey, e -> e.getValue().child(suffix)));
@@ -21,7 +21,11 @@ public final class Cluster {
   @Override
   public String toString() {
     return "Cluster{" +
-            "paths=" + paths +
+            "paths=" + paths() +
             '}';
+  }
+
+  public Map<Long, ActorPath> paths() {
+    return paths;
   }
 }
