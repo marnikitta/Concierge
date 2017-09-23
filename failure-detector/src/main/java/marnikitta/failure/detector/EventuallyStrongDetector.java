@@ -9,14 +9,14 @@ import akka.event.LoggingAdapter;
 import akka.japi.pf.ReceiveBuilder;
 import gnu.trove.map.TLongLongMap;
 import gnu.trove.map.hash.TLongLongHashMap;
+import gnu.trove.set.TLongSet;
+import gnu.trove.set.hash.TLongHashSet;
 import marnikitta.concierge.common.Cluster;
 import scala.concurrent.duration.Duration;
 
 import java.util.NavigableMap;
 import java.util.Optional;
-import java.util.SortedSet;
 import java.util.TreeMap;
-import java.util.TreeSet;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
@@ -39,7 +39,7 @@ public class EventuallyStrongDetector extends AbstractActor {
 
   private final NavigableMap<Long, ActorSelection> detectors = new TreeMap<>();
 
-  private final SortedSet<Long> suspected = new TreeSet<>();
+  private final TLongSet suspected = new TLongHashSet();
 
   private final TLongLongMap lastBeat = new TLongLongHashMap();
   private final TLongLongMap currentDelay = new TLongLongHashMap();
