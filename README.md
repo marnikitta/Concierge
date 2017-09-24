@@ -7,12 +7,13 @@ distributed systems concepts
 
 #### Roadmap
 
-1. __[✔]__ Implement _eventually strong_ failure detector. Timeout-based
-2. __[✔]__ Implement Ω leader elector. Monarchy (highest non-suspected pid wins)
-3. __[✔]__ Implement Paxos consensus algorithm
-4. __[✔]__ Build atomic broadcast on top of the consensus layer
-5. __[ ]__ Deliver ledger to the newly elected leader
-6. __[ ]__ Upgrade algorithms from fail-stop to fail-restore model
-7. __[ ]__ Implement KV-storage using state-machine replication
-8. __[ ]__ Add sessions, ephemeral nodes...
-9. __[ ]__ Make leader election primitive aware of the ledger length
+1.  __[✔]__ Implement _eventually strong_ failure detector. Timeout-based
+2.  __[✔]__ Implement Ω leader elector. Monarchy (highest non-suspected pid wins)
+3.  __[✔]__ Implement Paxos consensus algorithm
+4.  __[✔]__ Build atomic broadcast on top of the consensus layer
+5.  __[✔]__ Implement KV-storage using state-machine replication
+6.  __[✔]__ Add sessions, ephemeral nodes...
+7.  __[ ]__ Wrap kv-storage with REST HTTP server
+8.  __[ ]__ Generate simple REST client (Retrofit?)
+9.  __[ ]__ Docker container
+10. __[ ]__ Basic REPL client as proof of concept
