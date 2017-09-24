@@ -85,7 +85,7 @@ public final class StorageEntry {
             ", value=" + Arrays.toString(value) +
             ", createdAt=" + createdAt +
             ", lastUpdatedAt=" + lastUpdatedAt +
-            ", sessionId=" + sessionId +
+            ", id=" + sessionId +
             ", ephemeral=" + ephemeral +
             ", version=" + version +
             '}';

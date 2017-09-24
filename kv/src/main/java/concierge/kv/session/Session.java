@@ -23,7 +23,7 @@ public final class Session {
     return heartbeatDelay;
   }
 
-  public long sessionId() {
+  public long id() {
     return sessionId;
   }
 
@@ -36,7 +36,7 @@ public final class Session {
   }
 
   public boolean isExpired(Instant now) {
-    return lastHeartbeatAt.plus(heartbeatDelay).isAfter(now);
+    return lastHeartbeatAt.plus(heartbeatDelay).isBefore(now);
   }
 
   public Session heartbeated(Instant lastHeartbeatAt) {
@@ -50,7 +50,7 @@ public final class Session {
   @Override
   public String toString() {
     return "Session{" +
-            "sessionId=" + sessionId +
+            "id=" + sessionId +
             ", createdAt=" + createdAt +
             ", lastHeartbeatAt=" + lastHeartbeatAt +
             ", heartbeatDelay=" + heartbeatDelay +

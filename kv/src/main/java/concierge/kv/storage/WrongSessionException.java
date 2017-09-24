@@ -23,7 +23,7 @@ public class WrongSessionException extends ConciergeActionException {
   public String toString() {
     return "WrongSessionException{" +
             "key='" + key + '\'' +
-            ", sessionId=" + sessionId +
+            ", id=" + sessionId +
             '}';
   }
 }

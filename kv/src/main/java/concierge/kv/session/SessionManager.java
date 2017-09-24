@@ -5,6 +5,7 @@ import gnu.trove.map.hash.TLongObjectHashMap;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.function.Supplier;
 
 public final class SessionManager {
   private final TLongObjectMap<Session> sessions = new TLongObjectHashMap<>();
@@ -47,4 +48,27 @@ public final class SessionManager {
   public boolean isExpired(long sessionId) throws NoSuchSessionException {
     return get(sessionId).isExpired(Instant.now());
   }
+
+  public static void main(final String... args) {
+  }
+
+  public static class Lazy<V> {
+    private V val;
+    private volatile Supplier<V> supplier;
+
+    public V get() {
+      if (supplier != null) {
+        synchronized (this) {
+          if (val == null) {
+            val = supplier.get();
+            supplier = null;
+          }
+        }
+      }
+      return val;
+    }
+  }
+
 }
+
+

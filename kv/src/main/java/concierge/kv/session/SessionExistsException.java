@@ -16,7 +16,7 @@ public class SessionExistsException extends ConciergeActionException {
   @Override
   public String toString() {
     return "SessionExistsException{" +
-            "sessionId=" + sessionId +
+            "id=" + sessionId +
             '}';
   }
 }

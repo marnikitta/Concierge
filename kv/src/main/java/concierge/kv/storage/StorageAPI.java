@@ -49,25 +49,6 @@ public interface StorageAPI {
     }
   }
 
-  class Created {
-    private final StorageEntry entry;
-
-    public Created(StorageEntry entry) {
-      this.entry = entry;
-    }
-
-    public StorageEntry entry() {
-      return entry;
-    }
-
-    @Override
-    public String toString() {
-      return "Created{" +
-              "entry=" + entry +
-              '}';
-    }
-  }
-
   final class Read implements ConciergeAction {
     private final String key;
     private final long sessionId;
@@ -118,26 +99,7 @@ public interface StorageAPI {
       }
       manager.heartbeat(sessionId);
 
-      return new Updated(storage.update(key, value, expectedVersion, sessionId));
-    }
-  }
-
-  final class Updated {
-    private final StorageEntry entry;
-
-    public Updated(StorageEntry entry) {
-      this.entry = entry;
-    }
-
-    public StorageEntry entry() {
-      return entry;
-    }
-
-    @Override
-    public String toString() {
-      return "Updated{" +
-              "entry=" + entry +
-              '}';
+      return storage.update(key, value, expectedVersion, sessionId);
     }
   }
 }

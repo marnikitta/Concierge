@@ -16,7 +16,7 @@ public class NoSuchSessionException extends ConciergeActionException {
   @Override
   public String toString() {
     return "NoSuchSessionException{" +
-            "sessionId=" + sessionId +
+            "id=" + sessionId +
             '}';
   }
 }

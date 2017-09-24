@@ -14,7 +14,7 @@ public interface SessionAPI {
     @Override
     public String toString() {
       return "CreateSession{" +
-              "sessionId=" + sessionId() +
+              "id=" + sessionId() +
               '}';
     }
 
@@ -24,26 +24,7 @@ public interface SessionAPI {
 
     @Override
     public Object doIt(Storage storage, SessionManager manager) throws SessionExistsException {
-      return new SessionCreated(manager.create(sessionId));
-    }
-  }
-
-  final class SessionCreated {
-    private final Session session;
-
-    public SessionCreated(Session session) {
-      this.session = session;
-    }
-
-    public Session session() {
-      return session;
-    }
-
-    @Override
-    public String toString() {
-      return "SessionCreated{" +
-              "session=" + session +
-              '}';
+      return manager.create(sessionId);
     }
   }
 
@@ -61,7 +42,7 @@ public interface SessionAPI {
     @Override
     public String toString() {
       return "Heartbeat{" +
-              "sessionId=" + sessionId() +
+              "id=" + sessionId() +
               '}';
     }
 

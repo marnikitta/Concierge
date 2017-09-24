@@ -2,6 +2,7 @@ package concierge.kv;
 
 import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
+import akka.actor.Props;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import akka.japi.pf.ReceiveBuilder;
@@ -32,10 +33,14 @@ public final class LinearizableStorage extends AbstractActor {
     );
   }
 
+  public static Props props(Cluster cluster) {
+    return Props.create(LinearizableStorage.class, cluster);
+  }
+
   @Override
   public Receive createReceive() {
     return ReceiveBuilder.create()
-            .match(BroadcastEntry.class, this::onBroadcastEntry)
+            .match(AtomicBroadcastAPI.Deliver.class, d -> onBroadcastEntry((BroadcastEntry) d.value()))
             .match(ConciergeAction.class, this::onAction)
             .build();
   }
@@ -47,6 +52,8 @@ public final class LinearizableStorage extends AbstractActor {
   }
 
   private void onBroadcastEntry(BroadcastEntry entry) {
+    LOG.info("Broadcast received: {}", entry);
+
     try {
       @Nullable final Object result = entry.action().doIt(storage, sessionManager);
       if (inFlight.containsKey(entry.broadcastUUID()) && result != null) {

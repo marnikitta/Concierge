@@ -16,7 +16,7 @@ public class SessionExpiredException extends ConciergeActionException {
   @Override
   public String toString() {
     return "SessionExpiredException{" +
-            "sessionId=" + sessionId +
+            "id=" + sessionId +
             '}';
   }
 }
