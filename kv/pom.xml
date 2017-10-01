@@ -15,11 +15,6 @@
     <dependencies>
         <dependency>
             <groupId>marnikitta.concierge</groupId>
-            <artifactId>concierge-failure-detector</artifactId>
-            <version>1.0-SNAPSHOT</version>
-        </dependency>
-        <dependency>
-            <groupId>marnikitta.concierge</groupId>
             <artifactId>concierge-atomic-broadcast</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>

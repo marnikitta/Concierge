@@ -33,7 +33,7 @@ public final class DecreePresident extends AbstractActor {
 
   private DecreePresident(Cluster priests, long txid) {
     this.txid = txid;
-    this.priests = priests.paths().values().stream()
+    this.priests = priests.paths().stream()
             .map(path -> context().actorSelection(path))
             .collect(toSet());
   }

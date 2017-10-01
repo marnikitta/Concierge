@@ -13,18 +13,16 @@ import scala.concurrent.duration.Duration;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
-import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toMap;
 
 public class AtomicBroadcastTest extends ConciergeTest {
   public static final int PRIESTS_COUNT = 17;
@@ -33,8 +31,9 @@ public class AtomicBroadcastTest extends ConciergeTest {
   @Test
   public void singleLeaderBroadcastTest() {
     final String prefix = "simpleLeader";
-    final Map<Long, ActorPath> broadcastPaths = LongStream.range(0, PRIESTS_COUNT)
-            .boxed().collect(toMap(Function.identity(), l -> system.child(prefix + l)));
+    final Set<ActorPath> broadcastPaths = LongStream.range(0, PRIESTS_COUNT)
+            .boxed().map(l -> system.child(prefix + l))
+            .collect(Collectors.toSet());
 
     final List<TestBroadcast> testPriests = LongStream.range(0, PRIESTS_COUNT)
             .boxed()
@@ -56,8 +55,10 @@ public class AtomicBroadcastTest extends ConciergeTest {
   @Test
   public void killOneByOneTest() {
     final String prefix = "killOneByOneTest";
-    final Map<Long, ActorPath> broadcastPaths = LongStream.range(0, PRIESTS_COUNT)
-            .boxed().collect(toMap(Function.identity(), l -> system.child(prefix + l)));
+    final Set<ActorPath> broadcastPaths = LongStream.range(0, PRIESTS_COUNT)
+            .boxed()
+            .map(l -> system.child(prefix + l))
+            .collect(Collectors.toSet());
 
     final List<TestBroadcast> testPriests = LongStream.range(0, PRIESTS_COUNT)
             .boxed()
@@ -86,8 +87,10 @@ public class AtomicBroadcastTest extends ConciergeTest {
   @Test
   public void awakenMinorityTest() {
     final String prefix = "awakenMinorityTest";
-    final Map<Long, ActorPath> broadcastPaths = LongStream.range(0, PRIESTS_COUNT)
-            .boxed().collect(toMap(Function.identity(), l -> system.child(prefix + l)));
+    final Set<ActorPath> broadcastPaths = LongStream.range(0, PRIESTS_COUNT)
+            .boxed()
+            .map(l -> system.child(prefix + l))
+            .collect(Collectors.toSet());
 
     final List<TestBroadcast> majority = LongStream.range(0, PRIESTS_COUNT - MINORITY - 1)
             .boxed()
@@ -123,8 +126,10 @@ public class AtomicBroadcastTest extends ConciergeTest {
   @Test
   public void integrityAndTotalOrderTest() {
     final String prefix = "integrityAndTotalOrderTest";
-    final Map<Long, ActorPath> broadcastPaths = LongStream.range(0, PRIESTS_COUNT)
-            .boxed().collect(toMap(Function.identity(), l -> system.child(prefix + l)));
+    final Set<ActorPath> broadcastPaths = LongStream.range(0, PRIESTS_COUNT)
+            .boxed()
+            .map(l -> system.child(prefix + l))
+            .collect(Collectors.toSet());
 
     final List<TestBroadcast> testPriests = LongStream.range(0, PRIESTS_COUNT)
             .boxed()

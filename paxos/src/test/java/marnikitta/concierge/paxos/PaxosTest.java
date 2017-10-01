@@ -10,13 +10,13 @@ import org.testng.annotations.Test;
 import scala.concurrent.duration.Duration;
 
 import java.util.List;
-import java.util.Map;
-import java.util.stream.LongStream;
+import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Stream;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toMap;
+import static java.util.stream.Collectors.toSet;
 
 public class PaxosTest extends ConciergeTest {
   public static final int PRIESTS_COUNT = 17;
@@ -24,13 +24,11 @@ public class PaxosTest extends ConciergeTest {
 
   @Test
   public void testSimplePropose() throws Exception {
-    final String prefix = "simplePaxos";
-    final List<TestPriest> testPriests = LongStream.range(0, PRIESTS_COUNT)
-            .boxed()
-            .map(l -> testPriest(prefix, l))
+    final List<TestPriest> testPriests = Stream.generate(this::testPriest)
+            .limit(PRIESTS_COUNT)
             .collect(toList());
 
-    final Map<Long, ActorPath> priestsPaths = testPriests.stream().collect(toMap(p -> p.id, p -> p.path));
+    final Set<ActorPath> priestsPaths = testPriests.stream().map(p -> p.path).collect(toSet());
 
     final ActorRef leader = system.actorOf(DecreePresident.props(new Cluster(priestsPaths), 1));
     leader.tell(new PaxosAPI.Propose("VALUE", 1), ActorRef.noSender());
@@ -42,20 +40,18 @@ public class PaxosTest extends ConciergeTest {
 
   @Test
   public void testMajorityPropose() throws Exception {
-    final String prefix = "majorityPropose";
-    final List<TestPriest> majorityTestPriests = LongStream.range(0, PRIESTS_COUNT - MINORITY)
-            .boxed()
-            .map(l -> testPriest(prefix, l))
+    final List<TestPriest> majorityTestPriests = Stream.generate(this::testPriest)
+            .limit(PRIESTS_COUNT - MINORITY)
             .collect(toList());
 
-    final List<TestPriest> minorityTestPriests = LongStream.range(PRIESTS_COUNT - MINORITY, PRIESTS_COUNT)
-            .boxed()
-            .map(l -> testPriest(prefix, l))
+    final List<TestPriest> minorityTestPriests = Stream.generate(this::testPriest)
+            .limit(MINORITY)
             .collect(toList());
 
-    final Map<Long, ActorPath> priestsPaths = Stream
+    final Set<ActorPath> priestsPaths = Stream
             .concat(majorityTestPriests.stream(), minorityTestPriests.stream())
-            .collect(toMap(p -> p.id, p -> p.path));
+            .map(p -> p.path)
+            .collect(toSet());
 
     final List<TestKit> majorityKits = majorityTestPriests.stream().map(p -> p.kit).collect(toList());
 
@@ -68,20 +64,18 @@ public class PaxosTest extends ConciergeTest {
 
   @Test
   public void testMinorityPropose() throws Exception {
-    final String prefix = "minorityPropose";
-    final List<TestPriest> majorityTestPriests = LongStream.range(0, PRIESTS_COUNT - MINORITY)
-            .boxed()
-            .map(l -> testPriest(prefix, l))
+    final List<TestPriest> majorityTestPriests = Stream.generate(this::testPriest)
+            .limit(PRIESTS_COUNT - MINORITY)
             .collect(toList());
 
-    final List<TestPriest> minorityTestPriests = LongStream.range(PRIESTS_COUNT - MINORITY, PRIESTS_COUNT)
-            .boxed()
-            .map(l -> testPriest(prefix, l))
+    final List<TestPriest> minorityTestPriests = Stream.generate(this::testPriest)
+            .limit(MINORITY)
             .collect(toList());
 
-    final Map<Long, ActorPath> priestsPaths = Stream
+    final Set<ActorPath> priestsPaths = Stream
             .concat(majorityTestPriests.stream(), minorityTestPriests.stream())
-            .collect(toMap(p -> p.id, p -> p.path));
+            .map(p -> p.path)
+            .collect(toSet());
 
     final List<TestKit> majorityKits = majorityTestPriests.stream().map(p -> p.kit).collect(toList());
 
@@ -92,24 +86,22 @@ public class PaxosTest extends ConciergeTest {
     majorityKits.forEach(kit -> kit.expectNoMsg(Duration.create(1, SECONDS)));
   }
 
-  private TestPriest testPriest(String prefix, long id) {
+  private TestPriest testPriest() {
     final TestKit kit = new TestKit(system);
+    final String suffix = UUID.randomUUID().toString();
     return new TestPriest(
-            id,
-            system.actorOf(DecreePriest.props(1, kit.getRef()), prefix + id),
-            system.child(prefix + id),
+            system.actorOf(DecreePriest.props(1, kit.getRef()), suffix),
+            system.child(suffix),
             kit
     );
   }
 
   private static class TestPriest {
-    public final long id;
     public final ActorRef priest;
     public final ActorPath path;
     public final TestKit kit;
 
-    public TestPriest(long id, ActorRef priest, ActorPath path, TestKit kit) {
-      this.id = id;
+    public TestPriest(ActorRef priest, ActorPath path, TestKit kit) {
       this.priest = priest;
       this.path = path;
       this.kit = kit;

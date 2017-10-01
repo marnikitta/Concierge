@@ -2,7 +2,6 @@ package marnikitta.concierge.atomic;
 
 import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
-import akka.actor.ActorSelection;
 import akka.actor.Props;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
@@ -48,7 +47,6 @@ public final class AtomicBroadcast extends AbstractActor {
 
   private final ActorRef subscriber;
   private final Cluster cluster;
-  private final TLongObjectMap<ActorSelection> broadcasts;
 
   private long lastDeliveredTxid = -1;
 
@@ -65,9 +63,6 @@ public final class AtomicBroadcast extends AbstractActor {
     learnedDecrees.put(-1L, OLIVE_DAY);
     this.subscriber = subscriber;
     this.cluster = cluster;
-
-    this.broadcasts = new TLongObjectHashMap<>();
-    cluster.paths().forEach((i, p) -> broadcasts.put(i, context().actorSelection(p)));
   }
 
   public static Props props(ActorRef subscriber, Cluster cluster) {

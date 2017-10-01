@@ -14,10 +14,13 @@ import scala.concurrent.duration.Duration;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 
+import static java.util.stream.Collectors.*;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static org.testng.Assert.assertEquals;
@@ -58,8 +61,10 @@ public class LinearizableStorageTest extends ConciergeTest {
   }
 
   private ActorRef storage(String prefix) {
-    final Map<Long, ActorPath> storagePaths = LongStream.range(0, PRIEST_COUNT)
-            .boxed().collect(toMap(Function.identity(), l -> system.child(prefix + l)));
+    final Set<ActorPath> storagePaths = LongStream.range(0, PRIEST_COUNT)
+            .boxed()
+            .map(l -> system.child(prefix + l))
+            .collect(toSet());
 
     final List<ActorRef> testPriests = LongStream.range(0, PRIEST_COUNT)
             .boxed()

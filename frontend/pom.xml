@@ -2,20 +2,20 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
     <parent>
         <artifactId>concierge-parent</artifactId>
         <groupId>marnikitta.concierge</groupId>
         <version>1.0-SNAPSHOT</version>
-        <relativePath>../parent/</relativePath>
+        <relativePath>../parent/pom.xml</relativePath>
     </parent>
+    <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>concierge-failure-detector</artifactId>
+    <artifactId>concierge-frontend</artifactId>
 
     <dependencies>
         <dependency>
             <groupId>marnikitta.concierge</groupId>
-            <artifactId>concierge-common</artifactId>
+            <artifactId>concierge-kv</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
 
@@ -23,6 +23,14 @@
         <dependency>
             <groupId>com.typesafe.akka</groupId>
             <artifactId>akka-actor_2.11</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.typesafe.akka</groupId>
+            <artifactId>akka-remote_2.11</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.typesafe.akka</groupId>
+            <artifactId>akka-http_2.11</artifactId>
         </dependency>
 
         <!--utils-->
@@ -33,6 +41,10 @@
         <dependency>
             <groupId>org.jetbrains</groupId>
             <artifactId>annotations</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jooq</groupId>
+            <artifactId>jool</artifactId>
         </dependency>
     </dependencies>
 </project>
