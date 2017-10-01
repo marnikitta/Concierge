@@ -1,4 +1,4 @@
-package concierge.kv.session;
+package marnikitta.concierge.kv.session;
 
 import java.time.Duration;
 import java.time.Instant;

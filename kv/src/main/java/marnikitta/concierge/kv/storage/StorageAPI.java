@@ -1,9 +1,9 @@
-package concierge.kv.storage;
+package marnikitta.concierge.kv.storage;
 
-import concierge.kv.ConciergeAction;
-import concierge.kv.ConciergeActionException;
-import concierge.kv.session.SessionAPI;
-import concierge.kv.session.SessionManager;
+import marnikitta.concierge.kv.ConciergeAction;
+import marnikitta.concierge.kv.ConciergeActionException;
+import marnikitta.concierge.kv.session.SessionAPI;
+import marnikitta.concierge.kv.session.SessionManager;
 
 import java.time.Instant;
 

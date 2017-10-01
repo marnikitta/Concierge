@@ -1,4 +1,4 @@
-package concierge.kv;
+package marnikitta.concierge.kv;
 
 import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
@@ -6,8 +6,8 @@ import akka.actor.Props;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import akka.japi.pf.ReceiveBuilder;
-import concierge.kv.session.SessionManager;
-import concierge.kv.storage.Storage;
+import marnikitta.concierge.kv.session.SessionManager;
+import marnikitta.concierge.kv.storage.Storage;
 import marnikitta.concierge.atomic.AtomicBroadcast;
 import marnikitta.concierge.atomic.AtomicBroadcastAPI;
 import marnikitta.concierge.common.Cluster;

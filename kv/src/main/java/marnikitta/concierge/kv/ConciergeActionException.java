@@ -1,4 +1,4 @@
-package concierge.kv;
+package marnikitta.concierge.kv;
 
 public class ConciergeActionException extends Exception {
   public ConciergeActionException() {

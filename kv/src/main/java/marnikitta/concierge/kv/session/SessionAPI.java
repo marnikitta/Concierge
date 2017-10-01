@@ -1,7 +1,7 @@
-package concierge.kv.session;
+package marnikitta.concierge.kv.session;
 
-import concierge.kv.ConciergeAction;
-import concierge.kv.storage.Storage;
+import marnikitta.concierge.kv.ConciergeAction;
+import marnikitta.concierge.kv.storage.Storage;
 
 import java.time.Instant;
 

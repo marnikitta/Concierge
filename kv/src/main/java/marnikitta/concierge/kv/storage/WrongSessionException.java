@@ -1,6 +1,6 @@
-package concierge.kv.storage;
+package marnikitta.concierge.kv.storage;
 
-import concierge.kv.ConciergeActionException;
+import marnikitta.concierge.kv.ConciergeActionException;
 
 public class WrongSessionException extends ConciergeActionException {
   private final String key;

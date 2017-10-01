@@ -1,4 +1,4 @@
-package concierge.kv.session;
+package marnikitta.concierge.kv.session;
 
 import gnu.trove.map.TLongObjectMap;
 import gnu.trove.map.hash.TLongObjectHashMap;

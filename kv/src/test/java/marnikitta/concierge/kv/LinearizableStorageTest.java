@@ -1,23 +1,20 @@
-package concierge.kv;
+package marnikitta.concierge.kv;
 
 import akka.actor.ActorPath;
 import akka.actor.ActorRef;
 import akka.testkit.javadsl.TestKit;
-import concierge.kv.session.Session;
-import concierge.kv.session.SessionAPI;
-import concierge.kv.storage.StorageAPI;
-import concierge.kv.storage.StorageEntry;
+import marnikitta.concierge.kv.session.Session;
+import marnikitta.concierge.kv.session.SessionAPI;
+import marnikitta.concierge.kv.storage.StorageAPI;
+import marnikitta.concierge.kv.storage.StorageEntry;
 import marnikitta.concierge.common.Cluster;
 import marnikitta.concierge.common.ConciergeTest;
 import org.testng.annotations.Test;
 import scala.concurrent.duration.Duration;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 
 import static java.util.stream.Collectors.*;

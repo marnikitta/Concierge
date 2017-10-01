@@ -1,6 +1,6 @@
-package concierge.kv.session;
+package marnikitta.concierge.kv.session;
 
-import concierge.kv.ConciergeActionException;
+import marnikitta.concierge.kv.ConciergeActionException;
 
 public class SessionExpiredException extends ConciergeActionException {
   private final long sessionId;
