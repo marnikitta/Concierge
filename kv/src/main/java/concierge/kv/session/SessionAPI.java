@@ -3,6 +3,8 @@ package concierge.kv.session;
 import concierge.kv.ConciergeAction;
 import concierge.kv.storage.Storage;
 
+import java.time.Instant;
+
 public interface SessionAPI {
   final class CreateSession implements ConciergeAction {
     private final long sessionId;
@@ -23,8 +25,8 @@ public interface SessionAPI {
     }
 
     @Override
-    public Object doIt(Storage storage, SessionManager manager) throws SessionExistsException {
-      return manager.create(sessionId);
+    public Object doIt(Storage storage, SessionManager manager, Instant ts) throws SessionExistsException {
+      return manager.create(sessionId, ts);
     }
   }
 
@@ -47,8 +49,11 @@ public interface SessionAPI {
     }
 
     @Override
-    public Object doIt(Storage storage, SessionManager manager) throws NoSuchSessionException {
-      manager.heartbeat(sessionId);
+    public Object doIt(Storage storage, SessionManager manager, Instant ts) throws NoSuchSessionException, SessionExpiredException {
+      if (manager.get(sessionId).isExpired(ts)) {
+        throw new SessionExpiredException(sessionId);
+      }
+      manager.heartbeat(sessionId, ts);
       return null;
     }
   }

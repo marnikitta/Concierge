@@ -2,8 +2,10 @@ package concierge.kv.storage;
 
 import concierge.kv.ConciergeAction;
 import concierge.kv.ConciergeActionException;
-import concierge.kv.session.SessionExpiredException;
+import concierge.kv.session.SessionAPI;
 import concierge.kv.session.SessionManager;
+
+import java.time.Instant;
 
 public interface StorageAPI {
   final class Create implements ConciergeAction {
@@ -36,15 +38,13 @@ public interface StorageAPI {
     }
 
     @Override
-    public Object doIt(Storage storage, SessionManager manager) throws ConciergeActionException {
-      if (manager.isExpired(sessionId)) {
-        throw new SessionExpiredException(sessionId);
-      }
-      manager.heartbeat(sessionId);
+    public Object doIt(Storage storage, SessionManager manager, Instant ts) throws ConciergeActionException {
+      new SessionAPI.Heartbeat(sessionId).doIt(storage, manager, ts);
+
       if (ephemeral) {
-        return storage.createEphemeral(key, payload, sessionId);
+        return storage.createEphemeral(key, payload, sessionId, ts);
       } else {
-        return storage.create(key, payload, sessionId);
+        return storage.create(key, payload, sessionId, ts);
       }
     }
   }
@@ -70,12 +70,10 @@ public interface StorageAPI {
     }
 
     @Override
-    public Object doIt(Storage storage, SessionManager manager) throws ConciergeActionException {
-      if (manager.isExpired(sessionId)) {
-        throw new SessionExpiredException(sessionId);
-      }
-      manager.heartbeat(sessionId);
-      return storage.get(key);
+    public Object doIt(Storage storage, SessionManager manager, Instant ts) throws ConciergeActionException {
+      new SessionAPI.Heartbeat(sessionId).doIt(storage, manager, ts);
+
+      return storage.get(key, sessionId);
     }
   }
 
@@ -93,13 +91,10 @@ public interface StorageAPI {
     }
 
     @Override
-    public Object doIt(Storage storage, SessionManager manager) throws ConciergeActionException {
-      if (manager.isExpired(sessionId)) {
-        throw new SessionExpiredException(sessionId);
-      }
-      manager.heartbeat(sessionId);
+    public Object doIt(Storage storage, SessionManager manager, Instant ts) throws ConciergeActionException {
+      new SessionAPI.Heartbeat(sessionId).doIt(storage, manager, ts);
 
-      return storage.update(key, value, expectedVersion, sessionId);
+      return storage.update(key, value, expectedVersion, sessionId, ts);
     }
   }
 }

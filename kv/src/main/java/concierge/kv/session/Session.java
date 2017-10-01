@@ -4,19 +4,28 @@ import java.time.Duration;
 import java.time.Instant;
 
 public final class Session {
-  private final long sessionId;
+  private final long id;
   private final Instant createdAt;
-  private final Instant lastHeartbeatAt;
+  private final Instant heartbeatedAt;
   private final Duration heartbeatDelay;
 
-  public Session(long sessionId, Instant createdAt, Duration heartbeatDelay, Instant lastHeartbeatAt) {
-    if (lastHeartbeatAt.isBefore(createdAt)) {
-      throw new IllegalArgumentException("Last heartbeat must be after session creation ts");
-    }
+  public Session(long id,
+                 Instant createdAt,
+                 Duration heartbeatDelay) {
     this.heartbeatDelay = heartbeatDelay;
-    this.sessionId = sessionId;
+    this.id = id;
     this.createdAt = createdAt;
-    this.lastHeartbeatAt = lastHeartbeatAt;
+    this.heartbeatedAt = createdAt;
+  }
+
+  private Session(long id,
+                 Instant createdAt,
+                 Instant heartbeatedAt,
+                 Duration heartbeatDelay) {
+    this.id = id;
+    this.createdAt = createdAt;
+    this.heartbeatedAt = heartbeatedAt;
+    this.heartbeatDelay = heartbeatDelay;
   }
 
   public Duration heartbeatDelay() {
@@ -24,35 +33,35 @@ public final class Session {
   }
 
   public long id() {
-    return sessionId;
+    return id;
   }
 
   public Instant createdAt() {
     return createdAt;
   }
 
-  public Instant lastHeartbeatAt() {
-    return lastHeartbeatAt;
+  public Instant heartbeatedAt() {
+    return heartbeatedAt;
   }
 
   public boolean isExpired(Instant now) {
-    return lastHeartbeatAt.plus(heartbeatDelay).isBefore(now);
+    return heartbeatedAt.plus(heartbeatDelay).isBefore(now);
   }
 
-  public Session heartbeated(Instant lastHeartbeatAt) {
-    if (lastHeartbeatAt.isBefore(this.lastHeartbeatAt)) {
+  public Session heartbeated(Instant heartbeatedAt) {
+    if (heartbeatedAt.isBefore(this.heartbeatedAt)) {
       throw new IllegalArgumentException("Heartbeats should be monotonic");
     }
 
-    return new Session(sessionId, createdAt, heartbeatDelay, lastHeartbeatAt);
+    return new Session(id, createdAt, heartbeatedAt, heartbeatDelay);
   }
 
   @Override
   public String toString() {
     return "Session{" +
-            "id=" + sessionId +
+            "id=" + id +
             ", createdAt=" + createdAt +
-            ", lastHeartbeatAt=" + lastHeartbeatAt +
+            ", heartbeatedAt=" + heartbeatedAt +
             ", heartbeatDelay=" + heartbeatDelay +
             '}';
   }

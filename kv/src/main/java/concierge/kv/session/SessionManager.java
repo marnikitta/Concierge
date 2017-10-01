@@ -5,7 +5,6 @@ import gnu.trove.map.hash.TLongObjectHashMap;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.function.Supplier;
 
 public final class SessionManager {
   private final TLongObjectMap<Session> sessions = new TLongObjectHashMap<>();
@@ -23,11 +22,11 @@ public final class SessionManager {
     return sessions.containsKey(sessionId);
   }
 
-  public Session create(long sessionId) throws SessionExistsException {
+  public Session create(long sessionId, Instant createTs) throws SessionExistsException {
     if (sessions.containsKey(sessionId)) {
       throw new SessionExistsException(sessionId);
     } else {
-      final Session session = new Session(sessionId, Instant.now(), heartbeatDelay, Instant.now());
+      final Session session = new Session(sessionId, createTs, heartbeatDelay);
       sessions.put(sessionId, session);
       return session;
     }
@@ -41,34 +40,9 @@ public final class SessionManager {
     }
   }
 
-  public void heartbeat(long sessionId) throws NoSuchSessionException {
-    get(sessionId).heartbeated(Instant.now());
+  public void heartbeat(long sessionId, Instant heartbeatTs) throws NoSuchSessionException {
+    sessions.put(sessionId, get(sessionId).heartbeated(heartbeatTs));
   }
-
-  public boolean isExpired(long sessionId) throws NoSuchSessionException {
-    return get(sessionId).isExpired(Instant.now());
-  }
-
-  public static void main(final String... args) {
-  }
-
-  public static class Lazy<V> {
-    private V val;
-    private volatile Supplier<V> supplier;
-
-    public V get() {
-      if (supplier != null) {
-        synchronized (this) {
-          if (val == null) {
-            val = supplier.get();
-            supplier = null;
-          }
-        }
-      }
-      return val;
-    }
-  }
-
 }
 
 
