@@ -13,6 +13,8 @@
         <akka.version>2.5.4</akka.version>
         <akka-http.version>10.0.10</akka-http.version>
 
+        <akka-kryo-serialization.version>0.5.0</akka-kryo-serialization.version>
+
         <slf4j.version>1.7.24</slf4j.version>
         <logback.version>1.2.3</logback.version>
         <trove.version>3.0.3</trove.version>
@@ -42,6 +44,13 @@
                 <groupId>com.typesafe.akka</groupId>
                 <artifactId>akka-http_2.11</artifactId>
                 <version>${akka-http.version}</version>
+            </dependency>
+
+            <!--Serialization-->
+            <dependency>
+                <groupId>com.github.romix.akka</groupId>
+                <artifactId>akka-kryo-serialization_2.11</artifactId>
+                <version>${akka-kryo-serialization.version}</version>
             </dependency>
 
             <!--Logging-->
