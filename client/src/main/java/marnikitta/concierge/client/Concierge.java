@@ -2,9 +2,9 @@ package marnikitta.concierge.client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.sun.istack.internal.Nullable;
 import marnikitta.concierge.model.Session;
 import marnikitta.concierge.model.StorageEntry;
+import org.jetbrains.annotations.Nullable;
 import retrofit2.Call;
 import retrofit2.Response;
 import retrofit2.Retrofit;
