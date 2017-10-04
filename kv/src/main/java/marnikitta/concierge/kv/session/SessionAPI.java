@@ -54,7 +54,7 @@ public interface SessionAPI {
         throw new SessionExpiredException(sessionId);
       }
       manager.heartbeat(sessionId, ts);
-      return null;
+      return manager.get(sessionId);
     }
   }
 }
