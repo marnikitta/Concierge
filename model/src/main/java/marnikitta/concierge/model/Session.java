@@ -1,4 +1,7 @@
-package marnikitta.concierge.kv.session;
+package marnikitta.concierge.model;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -18,28 +21,33 @@ public final class Session {
     this.heartbeatedAt = createdAt;
   }
 
-  private Session(long id,
-                 Instant createdAt,
-                 Instant heartbeatedAt,
-                 Duration heartbeatDelay) {
+  @JsonCreator
+  private Session(@JsonProperty("id") long id,
+                  @JsonProperty("created_at") Instant createdAt,
+                  @JsonProperty("heartbeated_at") Instant heartbeatedAt,
+                  @JsonProperty("heartbeat_delay") Duration heartbeatDelay) {
     this.id = id;
     this.createdAt = createdAt;
     this.heartbeatedAt = heartbeatedAt;
     this.heartbeatDelay = heartbeatDelay;
   }
 
-  public Duration heartbeatDelay() {
-    return heartbeatDelay;
-  }
-
+  @JsonProperty("id")
   public long id() {
     return id;
   }
 
+  @JsonProperty("heartbeat_delay")
+  public Duration heartbeatDelay() {
+    return heartbeatDelay;
+  }
+
+  @JsonProperty("created_at")
   public Instant createdAt() {
     return createdAt;
   }
 
+  @JsonProperty("heartbeated_at")
   public Instant heartbeatedAt() {
     return heartbeatedAt;
   }

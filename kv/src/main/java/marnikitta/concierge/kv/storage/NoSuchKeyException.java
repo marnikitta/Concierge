@@ -3,20 +3,12 @@ package marnikitta.concierge.kv.storage;
 import marnikitta.concierge.kv.ConciergeActionException;
 
 public class NoSuchKeyException extends ConciergeActionException {
-  private final String key;
-
   public NoSuchKeyException(String key) {
-    this.key = key;
-  }
-
-  public String key() {
-    return key;
+    super("Entry with key " + key + " doesn't exist");
   }
 
   @Override
-  public String toString() {
-    return "NoSuchKeyException{" +
-            "key='" + key + '\'' +
-            '}';
+  public int code() {
+    return 8;
   }
 }

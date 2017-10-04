@@ -1,5 +1,7 @@
 package marnikitta.concierge.kv.storage;
 
+import marnikitta.concierge.model.StorageEntry;
+
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
@@ -8,7 +10,7 @@ public final class Storage {
   private final Map<String, StorageEntry> storage = new HashMap<>();
 
   public StorageEntry createEphemeral(String key,
-                                      byte[] payload,
+                                      String payload,
                                       long sessionId,
                                       Instant ts) throws KeyAlreadyExistsException {
     if (contains(key)) {
@@ -35,7 +37,7 @@ public final class Storage {
     } else {
       final StorageEntry entry = storage.get(key);
       if (entry.ephemeral() && entry.sessionId() != sessionId) {
-        throw new WrongSessionException(key, sessionId);
+        throw new WrongSessionException(key);
       } else {
         return entry;
       }
@@ -47,7 +49,7 @@ public final class Storage {
   }
 
   public StorageEntry create(String key,
-                             byte[] payload,
+                             String payload,
                              long sessionId,
                              Instant ts) throws KeyAlreadyExistsException {
     if (contains(key)) {
@@ -60,13 +62,13 @@ public final class Storage {
   }
 
   public StorageEntry update(String key,
-                             byte[] value,
+                             String value,
                              long expectedVersion,
                              long sessionId,
                              Instant ts) throws NoSuchKeyException, WrongSessionException, WrongVersionException {
     final StorageEntry entry = get(key, sessionId);
     if (expectedVersion != entry.version()) {
-      throw new WrongVersionException(key, expectedVersion, entry.version());
+      throw new WrongVersionException(key, expectedVersion);
     } else {
       final StorageEntry updated = entry.updated(value, ts);
       storage.put(key, updated);

@@ -2,6 +2,7 @@ package marnikitta.concierge.kv.session;
 
 import gnu.trove.map.TLongObjectMap;
 import gnu.trove.map.hash.TLongObjectHashMap;
+import marnikitta.concierge.model.Session;
 
 import java.time.Duration;
 import java.time.Instant;

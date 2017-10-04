@@ -10,13 +10,13 @@ import java.time.Instant;
 public interface StorageAPI {
   final class Create implements ConciergeAction {
     private final String key;
-    private final byte[] payload;
+    private final String value;
     private final long sessionId;
     private final boolean ephemeral;
 
-    public Create(String key, byte[] payload, long sessionId, boolean ephemeral) {
+    public Create(String key, String value, long sessionId, boolean ephemeral) {
       this.key = key;
-      this.payload = payload;
+      this.value = value;
       this.sessionId = sessionId;
       this.ephemeral = ephemeral;
     }
@@ -29,8 +29,8 @@ public interface StorageAPI {
       return key;
     }
 
-    public byte[] payload() {
-      return payload;
+    public String value() {
+      return value;
     }
 
     public long sessionId() {
@@ -42,9 +42,9 @@ public interface StorageAPI {
       new SessionAPI.Heartbeat(sessionId).doIt(storage, manager, ts);
 
       if (ephemeral) {
-        return storage.createEphemeral(key, payload, sessionId, ts);
+        return storage.createEphemeral(key, value, sessionId, ts);
       } else {
-        return storage.create(key, payload, sessionId, ts);
+        return storage.create(key, value, sessionId, ts);
       }
     }
   }
@@ -79,11 +79,11 @@ public interface StorageAPI {
 
   final class Update implements ConciergeAction {
     public final String key;
-    public final byte[] value;
+    public final String value;
     public final long sessionId;
     public final long expectedVersion;
 
-    public Update(String key, long expectedVersion, byte[] value, long sessionId) {
+    public Update(String key, long expectedVersion, String value, long sessionId) {
       this.key = key;
       this.value = value;
       this.sessionId = sessionId;

@@ -3,20 +3,12 @@ package marnikitta.concierge.kv.session;
 import marnikitta.concierge.kv.ConciergeActionException;
 
 public class NoSuchSessionException extends ConciergeActionException {
-  private final long sessionId;
-
   public NoSuchSessionException(long sessionId) {
-    this.sessionId = sessionId;
-  }
-
-  public long sessionId() {
-    return sessionId;
+    super("Session with id " + sessionId + "doesn't exists");
   }
 
   @Override
-  public String toString() {
-    return "NoSuchSessionException{" +
-            "id=" + sessionId +
-            '}';
+  public int code() {
+    return 2;
   }
 }

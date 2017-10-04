@@ -22,4 +22,8 @@ public class ConciergeActionException extends Exception {
                                      boolean writableStackTrace) {
     super(message, cause, enableSuppression, writableStackTrace);
   }
+
+  public int code() {
+    return 1;
+  }
 }

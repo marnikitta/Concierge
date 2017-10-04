@@ -3,10 +3,10 @@ package marnikitta.concierge.kv;
 import akka.actor.ActorPath;
 import akka.actor.ActorRef;
 import akka.testkit.javadsl.TestKit;
-import marnikitta.concierge.kv.session.Session;
+import marnikitta.concierge.model.Session;
 import marnikitta.concierge.kv.session.SessionAPI;
 import marnikitta.concierge.kv.storage.StorageAPI;
-import marnikitta.concierge.kv.storage.StorageEntry;
+import marnikitta.concierge.model.StorageEntry;
 import marnikitta.concierge.common.Cluster;
 import marnikitta.concierge.common.ConciergeTest;
 import org.testng.annotations.Test;
@@ -47,14 +47,10 @@ public class LinearizableStorageTest extends ConciergeTest {
     kit.send(storage, new SessionAPI.CreateSession(1));
     final Session session = (Session) kit.receiveOne(Duration.create(3, TimeUnit.SECONDS));
 
-    kit.send(storage, new StorageAPI.Create("key", "value".getBytes(), session.id(), false));
+    kit.send(storage, new StorageAPI.Create("key", "value", session.id(), false));
     final Object o = kit.receiveOne(Duration.create(3, TimeUnit.SECONDS));
 
     assertTrue(o instanceof StorageEntry);
-  }
-
-  @Test
-  public void sessionExpiredTest() {
   }
 
   private ActorRef storage(String prefix) {

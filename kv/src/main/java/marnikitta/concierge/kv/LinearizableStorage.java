@@ -6,11 +6,12 @@ import akka.actor.Props;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import akka.japi.pf.ReceiveBuilder;
-import marnikitta.concierge.kv.session.SessionManager;
-import marnikitta.concierge.kv.storage.Storage;
 import marnikitta.concierge.atomic.AtomicBroadcast;
 import marnikitta.concierge.atomic.AtomicBroadcastAPI;
 import marnikitta.concierge.common.Cluster;
+import marnikitta.concierge.kv.session.SessionManager;
+import marnikitta.concierge.kv.storage.Storage;
+import marnikitta.concierge.model.ConciergeFailure;
 import org.jetbrains.annotations.Nullable;
 
 import java.time.Instant;
@@ -63,7 +64,7 @@ public final class LinearizableStorage extends AbstractActor {
       }
     } catch (ConciergeActionException e) {
       if (inFlight.containsKey(entry.broadcastUUID())) {
-        inFlight.get(entry.broadcastUUID()).tell(e, self());
+        inFlight.get(entry.broadcastUUID()).tell(new ConciergeFailure(e.getMessage(), e.code()), self());
         inFlight.remove(entry.broadcastUUID());
       }
     }

@@ -25,6 +25,7 @@
         <java.source.level>1.8</java.source.level>
         <maven-compiler-plugin.version>3.6.1</maven-compiler-plugin.version>
         <jool.version>0.9.12</jool.version>
+        <jackson.version>2.9.1</jackson.version>
     </properties>
 
     <dependencyManagement>
@@ -51,6 +52,11 @@
                 <groupId>com.github.romix.akka</groupId>
                 <artifactId>akka-kryo-serialization_2.11</artifactId>
                 <version>${akka-kryo-serialization.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-annotations</artifactId>
+                <version>${jackson.version}</version>
             </dependency>
 
             <!--Logging-->

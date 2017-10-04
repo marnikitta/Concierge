@@ -1,10 +1,14 @@
-package marnikitta.concierge.kv.storage;
+package marnikitta.concierge.model;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.time.Instant;
-import java.util.Arrays;
 
 public final class StorageEntry {
-  private final String key; private final byte[] value;
+  private final String key;
+  private final String value;
   private final Instant createdAt;
   private final Instant updatedAt;
   private final long sessionId;
@@ -12,7 +16,7 @@ public final class StorageEntry {
   private final long version;
 
   public StorageEntry(String key,
-                      byte[] value,
+                      String value,
                       long sessionId,
                       boolean ephemeral,
                       Instant createdAt) {
@@ -25,13 +29,16 @@ public final class StorageEntry {
     this.version = 1;
   }
 
-  private StorageEntry(String key,
-                       byte[] value,
-                       Instant createdAt,
-                       Instant updatedAt,
-                       long sessionId,
-                       boolean ephemeral,
-                       long version) {
+  @JsonCreator
+  private StorageEntry(@JsonProperty("key") String key,
+                       @JsonProperty("value") String value,
+                       @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy hh:mm:ss")
+                       @JsonProperty("created_at") Instant createdAt,
+                       @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy hh:mm:ss")
+                       @JsonProperty("updated_at") Instant updatedAt,
+                       @JsonProperty("session_id") long sessionId,
+                       @JsonProperty("ephemeral") boolean ephemeral,
+                       @JsonProperty("version") long version) {
     this.key = key;
     this.value = value;
     this.createdAt = createdAt;
@@ -41,35 +48,44 @@ public final class StorageEntry {
     this.version = version;
   }
 
-  public long version() {
-    return version;
-  }
-
+  @JsonProperty("key")
   public String key() {
     return key;
   }
 
-  public byte[] value() {
+  @JsonProperty("version")
+  public long version() {
+    return version;
+  }
+
+  @JsonProperty("value")
+  public String value() {
     return value;
   }
 
+  @JsonProperty("created_at")
+  @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy hh:mm:ss")
   public Instant createdAt() {
     return createdAt;
   }
 
+  @JsonProperty("last_updated_at")
+  @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy hh:mm:ss")
   public Instant lastUpdatedAt() {
     return updatedAt;
   }
 
+  @JsonProperty("session_id")
   public long sessionId() {
     return sessionId;
   }
 
+  @JsonProperty("ephemeral")
   public boolean ephemeral() {
     return ephemeral;
   }
 
-  public StorageEntry updated(byte[] value, Instant updatedAt) {
+  public StorageEntry updated(String value, Instant updatedAt) {
     return new StorageEntry(key, value, createdAt, updatedAt, sessionId, ephemeral, version + 1);
   }
 
@@ -77,7 +93,7 @@ public final class StorageEntry {
   public String toString() {
     return "StorageEntry{" +
             "key='" + key + '\'' +
-            ", value=" + Arrays.toString(value) +
+            ", value=" + value +
             ", createdAt=" + createdAt +
             ", updatedAt=" + updatedAt +
             ", id=" + sessionId +

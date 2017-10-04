@@ -3,20 +3,12 @@ package marnikitta.concierge.kv.session;
 import marnikitta.concierge.kv.ConciergeActionException;
 
 public class SessionExpiredException extends ConciergeActionException {
-  private final long sessionId;
-
   public SessionExpiredException(long sessionId) {
-    this.sessionId = sessionId;
-  }
-
-  public long sessionId() {
-    return sessionId;
+    super("Session with id " + sessionId + " has expired");
   }
 
   @Override
-  public String toString() {
-    return "SessionExpiredException{" +
-            "id=" + sessionId +
-            '}';
+  public int code() {
+    return 5;
   }
 }
