@@ -63,6 +63,7 @@ public final class LinearizableStorage extends AbstractActor {
         inFlight.remove(entry.broadcastUUID());
       }
     } catch (ConciergeActionException e) {
+      LOG.info("ConciergeException: {}", e);
       if (inFlight.containsKey(entry.broadcastUUID())) {
         inFlight.get(entry.broadcastUUID()).tell(new ConciergeFailure(e.getMessage(), e.code()), self());
         inFlight.remove(entry.broadcastUUID());
