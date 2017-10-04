@@ -17,5 +17,6 @@
         <module>kv</module>
         <module>frontend</module>
         <module>model</module>
+        <module>client</module>
     </modules>
 </project>
