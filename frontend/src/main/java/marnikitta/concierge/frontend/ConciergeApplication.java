@@ -25,12 +25,13 @@ import com.typesafe.config.ConfigFactory;
 import marnikitta.concierge.common.Cluster;
 import marnikitta.concierge.kv.LinearizableStorage;
 import marnikitta.concierge.kv.session.SessionAPI;
-import marnikitta.concierge.model.ConciergeFailure;
+import marnikitta.concierge.kv.storage.StorageAPI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Function1;
 
 import java.io.IOException;
+import java.net.ConnectException;
 import java.net.InetAddress;
 import java.util.Collections;
 import java.util.HashSet;
@@ -91,12 +92,11 @@ public final class ConciergeApplication extends AllDirectives {
 
   public Route createRoute() {
     final Function1<Object, RouteAdapter> expectedFailureMapper = func(response -> {
-      if (response instanceof ConciergeFailure) {
+      if (response instanceof ConnectException) {
         return complete(
                 StatusCodes.IM_A_TEAPOT,
-                ((ConciergeFailure) response).message(),
+                response,
                 Jackson.marshaller(mapper)
-
         );
       } else {
         return complete(StatusCodes.OK, response, Jackson.marshaller(mapper));
@@ -104,23 +104,72 @@ public final class ConciergeApplication extends AllDirectives {
     });
 
     final Route sessionPath = route(
-            put(() ->
-                    path(longSegment(), id ->
+            post(() ->
+                    pathEnd(() ->
                             onComplete(
-                                    PatternsCS.ask(kv, new SessionAPI.CreateSession(id), 100),
+                                    PatternsCS.ask(kv, new SessionAPI.CreateSession(), 100),
                                     sessionTry -> sessionTry.map(expectedFailureMapper).get()
                             )
                     )
             ),
             patch(() ->
-                    path(longSegment(), id ->
+                    path(longSegment(), sessionId ->
                             onComplete(
-                                    PatternsCS.ask(kv, new SessionAPI.Heartbeat(id), 100),
+                                    PatternsCS.ask(kv, new SessionAPI.Heartbeat(sessionId), 100),
                                     sessionTry -> sessionTry.map(expectedFailureMapper).get()
                             )
                     )
             )
     );
-    return route(sessionPath);
+
+    final Route storagePath = route(
+            put(() ->
+                    path(key ->
+                            parameterMap(params ->
+                                    onComplete(
+                                            PatternsCS.ask(kv, new StorageAPI.Create(
+                                                    key,
+                                                    params.get("value"),
+                                                    Long.parseLong(params.get("session")),
+                                                    Boolean.parseBoolean(params.getOrDefault("ephemeral", "false"))
+                                            ), 100),
+                                            sessionTry -> sessionTry.map(expectedFailureMapper).get()
+                                    )
+                            )
+                    )
+            ),
+            patch(() ->
+                    path(key ->
+                            parameterMap(params ->
+                                    onComplete(
+                                            PatternsCS.ask(kv, new StorageAPI.Update(
+                                                    key,
+                                                    Long.parseLong(params.get("version")),
+                                                    params.get("value"), Long.parseLong(params.get("session"))
+                                            ), 100),
+                                            sessionTry -> sessionTry.map(expectedFailureMapper).get()
+                                    )
+                            )
+                    )
+            ),
+            get(() ->
+                    path(key ->
+                            parameter("session", session ->
+                                    onComplete(
+                                            PatternsCS.ask(kv, new StorageAPI.Read(
+                                                    key,
+                                                    Long.parseLong(session)
+                                            ), 100),
+                                            sessionTry -> sessionTry.map(expectedFailureMapper).get()
+                                    )
+                            )
+                    )
+            )
+    );
+
+    return route(
+            pathPrefix("sessions", () -> sessionPath),
+            pathPrefix("keys", () -> storagePath)
+    );
   }
 }
