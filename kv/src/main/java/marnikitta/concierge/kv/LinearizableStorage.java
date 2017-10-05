@@ -11,7 +11,7 @@ import marnikitta.concierge.atomic.AtomicBroadcastAPI;
 import marnikitta.concierge.common.Cluster;
 import marnikitta.concierge.kv.session.SessionManager;
 import marnikitta.concierge.kv.storage.Storage;
-import marnikitta.concierge.model.ConciergeFailure;
+import marnikitta.concierge.model.ConciergeActionException;
 import org.jetbrains.annotations.Nullable;
 
 import java.time.Instant;
@@ -65,7 +65,7 @@ public final class LinearizableStorage extends AbstractActor {
     } catch (ConciergeActionException e) {
       LOG.info("ConciergeException: {}", e);
       if (inFlight.containsKey(entry.broadcastUUID())) {
-        inFlight.get(entry.broadcastUUID()).tell(new ConciergeFailure(e.getMessage(), e.code()), self());
+        inFlight.get(entry.broadcastUUID()).tell(e, self());
         inFlight.remove(entry.broadcastUUID());
       }
     }

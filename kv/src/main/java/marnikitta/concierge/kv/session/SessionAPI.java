@@ -2,15 +2,19 @@ package marnikitta.concierge.kv.session;
 
 import marnikitta.concierge.kv.ConciergeAction;
 import marnikitta.concierge.kv.storage.Storage;
+import marnikitta.concierge.model.session.NoSuchSessionException;
+import marnikitta.concierge.model.session.SessionExistsException;
+import marnikitta.concierge.model.session.SessionExpiredException;
 
 import java.time.Instant;
+import java.util.concurrent.ThreadLocalRandom;
 
 public interface SessionAPI {
   final class CreateSession implements ConciergeAction {
     private final long sessionId;
 
-    public CreateSession(long sessionId) {
-      this.sessionId = sessionId;
+    public CreateSession() {
+      this.sessionId = ThreadLocalRandom.current().nextLong();
     }
 
     @Override

@@ -1,7 +1,7 @@
 package marnikitta.concierge.kv.storage;
 
 import marnikitta.concierge.kv.ConciergeAction;
-import marnikitta.concierge.kv.ConciergeActionException;
+import marnikitta.concierge.model.ConciergeActionException;
 import marnikitta.concierge.kv.session.SessionAPI;
 import marnikitta.concierge.kv.session.SessionManager;
 

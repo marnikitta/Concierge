@@ -1,6 +1,10 @@
 package marnikitta.concierge.kv.storage;
 
+import marnikitta.concierge.model.storage.KeyAlreadyExistsException;
+import marnikitta.concierge.model.storage.NoSuchKeyException;
 import marnikitta.concierge.model.StorageEntry;
+import marnikitta.concierge.model.session.WrongSessionException;
+import marnikitta.concierge.model.storage.WrongVersionException;
 
 import java.time.Instant;
 import java.util.HashMap;
