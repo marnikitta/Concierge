@@ -32,9 +32,7 @@ public final class StorageEntry {
   @JsonCreator
   private StorageEntry(@JsonProperty("key") String key,
                        @JsonProperty("value") String value,
-                       @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy hh:mm:ss")
                        @JsonProperty("created_at") Instant createdAt,
-                       @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy hh:mm:ss")
                        @JsonProperty("updated_at") Instant updatedAt,
                        @JsonProperty("session_id") long sessionId,
                        @JsonProperty("ephemeral") boolean ephemeral,
@@ -64,13 +62,11 @@ public final class StorageEntry {
   }
 
   @JsonProperty("created_at")
-  @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy hh:mm:ss")
   public Instant createdAt() {
     return createdAt;
   }
 
   @JsonProperty("last_updated_at")
-  @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy hh:mm:ss")
   public Instant lastUpdatedAt() {
     return updatedAt;
   }
