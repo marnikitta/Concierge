@@ -31,12 +31,9 @@ public class LinearizableStorageTest extends ConciergeTest {
     final ActorRef storage = storage("createSessionTest");
     final TestKit kit = new TestKit(system);
 
-    kit.send(storage, new SessionAPI.CreateSession(1));
+    kit.send(storage, new SessionAPI.CreateSession());
     final Object o = kit.receiveOne(Duration.create(3, TimeUnit.SECONDS));
     assertTrue(o instanceof Session);
-
-    final Session session = (Session) o;
-    assertEquals(session.id(), 1);
   }
 
   @Test
@@ -44,7 +41,7 @@ public class LinearizableStorageTest extends ConciergeTest {
     final ActorRef storage = storage("readWriteTest");
     final TestKit kit = new TestKit(system);
 
-    kit.send(storage, new SessionAPI.CreateSession(1));
+    kit.send(storage, new SessionAPI.CreateSession());
     final Session session = (Session) kit.receiveOne(Duration.create(3, TimeUnit.SECONDS));
 
     kit.send(storage, new StorageAPI.Create("key", "value", session.id(), false));
