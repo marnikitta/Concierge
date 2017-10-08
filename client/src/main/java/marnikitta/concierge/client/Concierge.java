@@ -51,17 +51,16 @@ public final class Concierge implements AutoCloseable {
     pinger = new Thread(() -> {
       while (true) {
         try {
-          final Response<Session> execute = sessionClient.heartbeat(session.id()).execute();
-          if (!execute.isSuccessful()) {
-            return;
-          }
+          sessionClient.heartbeat(session.id()).execute();
           TimeUnit.MILLISECONDS.sleep(session.heartbeatDelay().toMillis() / 2);
-        } catch (SessionExpiredException | NoSuchSessionException | InterruptedException | IOException ignored) {
+        } catch (SessionExpiredException | InterruptedException | NoSuchSessionException e) {
           return;
+        } catch (IOException ignored) {
         }
       }
     });
 
+    pinger.setDaemon(true);
     pinger.start();
   }
 
@@ -115,11 +114,10 @@ public final class Concierge implements AutoCloseable {
 
       System.out.println(prev);
 
-      for (int i = 0; i < 10; ++i) {
-        TimeUnit.SECONDS.sleep(5);
+      for (int i = 0; i < 10000; ++i) {
         prev = concierge.update(
                 prev.key(),
-                prev.value() + i,
+                String.valueOf(i),
                 prev.version()
         );
 
@@ -157,8 +155,5 @@ public final class Concierge implements AutoCloseable {
 
     @PATCH("sessions/{session}")
     Call<Session> heartbeat(@Path("session") long id);
-
-    @DELETE("sessions/{session}")
-    Call<Void> close(@Path("session") long session);
   }
 }
