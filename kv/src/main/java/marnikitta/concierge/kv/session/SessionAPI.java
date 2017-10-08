@@ -27,7 +27,7 @@ public interface SessionAPI {
     }
 
     @Override
-    public Object doIt(Storage storage, SessionManager manager, Instant ts) {
+    public Object apply(Storage storage, SessionManager manager, Instant ts) {
       return manager.create(sessionId, ts);
     }
   }
@@ -51,7 +51,7 @@ public interface SessionAPI {
     }
 
     @Override
-    public Object doIt(Storage storage, SessionManager manager, Instant ts) {
+    public Object apply(Storage storage, SessionManager manager, Instant ts) {
       if (manager.get(sessionId).isExpired(ts)) {
         throw new SessionExpiredException(sessionId);
       }

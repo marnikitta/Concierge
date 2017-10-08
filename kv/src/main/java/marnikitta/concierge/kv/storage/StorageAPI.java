@@ -37,8 +37,8 @@ public interface StorageAPI {
     }
 
     @Override
-    public Object doIt(Storage storage, SessionManager manager, Instant ts) {
-      new SessionAPI.Heartbeat(sessionId).doIt(storage, manager, ts);
+    public Object apply(Storage storage, SessionManager manager, Instant ts) {
+      new SessionAPI.Heartbeat(sessionId).apply(storage, manager, ts);
 
       if (ephemeral) {
         return storage.createEphemeral(key, value, sessionId, ts);
@@ -69,8 +69,8 @@ public interface StorageAPI {
     }
 
     @Override
-    public Object doIt(Storage storage, SessionManager manager, Instant ts) {
-      new SessionAPI.Heartbeat(sessionId).doIt(storage, manager, ts);
+    public Object apply(Storage storage, SessionManager manager, Instant ts) {
+      new SessionAPI.Heartbeat(sessionId).apply(storage, manager, ts);
 
       return storage.get(key, sessionId);
     }
@@ -90,8 +90,8 @@ public interface StorageAPI {
     }
 
     @Override
-    public Object doIt(Storage storage, SessionManager manager, Instant ts) {
-      new SessionAPI.Heartbeat(sessionId).doIt(storage, manager, ts);
+    public Object apply(Storage storage, SessionManager manager, Instant ts) {
+      new SessionAPI.Heartbeat(sessionId).apply(storage, manager, ts);
 
       return storage.update(key, value, expectedVersion, sessionId, ts);
     }
@@ -109,8 +109,8 @@ public interface StorageAPI {
     }
 
     @Override
-    public Object doIt(Storage storage, SessionManager manager, Instant ts) {
-      new SessionAPI.Heartbeat(sessionId).doIt(storage, manager, ts);
+    public Object apply(Storage storage, SessionManager manager, Instant ts) {
+      new SessionAPI.Heartbeat(sessionId).apply(storage, manager, ts);
       storage.delete(key, expectedVersion, sessionId, ts);
       return true;
     }

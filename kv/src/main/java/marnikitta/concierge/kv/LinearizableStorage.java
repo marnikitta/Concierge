@@ -57,7 +57,7 @@ public final class LinearizableStorage extends AbstractActor {
     LOG.info("Broadcast received: {}", entry);
 
     try {
-      @Nullable final Object result = entry.action().doIt(storage, sessionManager, entry.broadcastedAt());
+      @Nullable final Object result = entry.action().apply(storage, sessionManager, entry.broadcastedAt());
       if (inFlight.containsKey(entry.broadcastUUID()) && result != null) {
         inFlight.get(entry.broadcastUUID()).tell(result, self());
         inFlight.remove(entry.broadcastUUID());
