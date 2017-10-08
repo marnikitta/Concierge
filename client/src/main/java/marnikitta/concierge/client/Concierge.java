@@ -125,38 +125,38 @@ public final class Concierge implements AutoCloseable {
       }
     }
   }
-}
 
-interface StorageClient {
-  @PUT("keys/{key}")
-  Call<StorageEntry> create(@Path("key") String key,
-                            @Query("session") long session,
-                            @Query("value") String value,
-                            @Query("ephemeral") boolean ephemeral);
+  private interface StorageClient {
+    @PUT("keys/{key}")
+    Call<StorageEntry> create(@Path("key") String key,
+                              @Query("session") long session,
+                              @Query("value") String value,
+                              @Query("ephemeral") boolean ephemeral);
 
-  @GET("keys/{key}")
-  Call<StorageEntry> get(@Path("key") String key,
-                         @Query("session") long session);
+    @GET("keys/{key}")
+    Call<StorageEntry> get(@Path("key") String key,
+                           @Query("session") long session);
 
-  @PATCH("keys/{key}")
-  Call<StorageEntry> update(@Path("key") String key,
-                            @Query("session") long session,
-                            @Query("value") String value,
-                            @Query("version") long version);
+    @PATCH("keys/{key}")
+    Call<StorageEntry> update(@Path("key") String key,
+                              @Query("session") long session,
+                              @Query("value") String value,
+                              @Query("version") long version);
 
-  @DELETE("keys/{key}")
-  Call<StorageEntry> delete(@Path("key") String key,
-                            @Query("session") long session,
-                            @Query("version") long version);
-}
+    @DELETE("keys/{key}")
+    Call<StorageEntry> delete(@Path("key") String key,
+                              @Query("session") long session,
+                              @Query("version") long version);
+  }
 
-interface SessionClient {
-  @POST("sessions")
-  Call<Session> createSession();
+  private interface SessionClient {
+    @POST("sessions")
+    Call<Session> createSession();
 
-  @PATCH("sessions/{session}")
-  Call<Session> heartbeat(@Path("session") long id);
+    @PATCH("sessions/{session}")
+    Call<Session> heartbeat(@Path("session") long id);
 
-  @DELETE("sessions/{session}")
-  Call<Void> close(@Path("session") long session);
+    @DELETE("sessions/{session}")
+    Call<Void> close(@Path("session") long session);
+  }
 }
