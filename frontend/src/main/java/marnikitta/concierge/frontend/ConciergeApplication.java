@@ -20,6 +20,7 @@ import akka.stream.ActorMaterializer;
 import akka.stream.javadsl.Flow;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import marnikitta.concierge.common.Cluster;
 import marnikitta.concierge.kv.LinearizableStorage;
@@ -32,9 +33,8 @@ import scala.Function1;
 
 import java.io.IOException;
 import java.net.InetAddress;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
@@ -45,24 +45,38 @@ import static java.lang.Long.parseLong;
 import static scala.compat.java8.JFunction.func;
 
 public final class ConciergeApplication extends AllDirectives {
-  private final Logger LOG = LoggerFactory.getLogger(ConciergeApplication.class);
+  private final static Logger LOG = LoggerFactory.getLogger(ConciergeApplication.class);
   private final ObjectMapper mapper = new ObjectMapper()
           .registerModule(new JavaTimeModule());
 
   private final Cluster cluster;
 
+  private final String hostname;
+  private final int port;
+  private final int apiPort;
+
   private ActorRef kv;
 
-  public ConciergeApplication(Cluster cluster) {
+  public ConciergeApplication(String hostname,
+                              int port,
+                              int apiPort,
+                              Cluster cluster) {
     this.cluster = cluster;
+    this.port = port;
+    this.apiPort = apiPort;
+    this.hostname = hostname;
   }
 
   public static void main(String... args) throws IOException {
+    LOG.info("Args: {}", Arrays.toString(args));
+    final String localHost = args[0].split(":")[0];
+    final int localPort = Integer.parseInt(args[0].split(":")[1]);
+    final int apiPort = Integer.parseInt(args[1]);
+    final String cluster = args[2];
+
     final Set<ActorPath> clusterPaths = new HashSet<>();
 
-    final List<String> localString = Collections.singletonList("localhost:23456");
-
-    for (String arg : localString) {
+    for (String arg : cluster.split(",")) {
       final String[] split = arg.split(":");
       final InetAddress host = InetAddress.getByName(split[0]);
       final int port = Integer.parseInt(split[1]);
@@ -71,25 +85,31 @@ public final class ConciergeApplication extends AllDirectives {
       clusterPaths.add(RootActorPath.apply(actorSystemAddress, "/").child("user"));
     }
 
-    new ConciergeApplication(new Cluster(clusterPaths)).run();
+    new ConciergeApplication(
+            localHost,
+            localPort,
+            apiPort,
+            new Cluster(clusterPaths)
+    ).run();
   }
 
   public void run() throws IOException {
-    final ConnectHttp host = ConnectHttp.toHost("localhost", 8080);
 
-    final ActorSystem system = ActorSystem.create("concierge", ConfigFactory.load("remote"));
+    final Config config = ConfigFactory.parseString("akka.remote.netty.tcp.port=" + port)
+            .withFallback(ConfigFactory.parseString("akka.remote.netty.tcp.hostname=" + hostname))
+            .withFallback(ConfigFactory.load("remote"));
+
+    final ActorSystem system = ActorSystem.create("concierge", config.withFallback(ConfigFactory.load("remote")));
     kv = system.actorOf(LinearizableStorage.props(new Cluster(cluster.paths(), "kv")), "kv");
 
     final ActorMaterializer materializer = ActorMaterializer.create(system);
 
     final Flow<HttpRequest, HttpResponse, NotUsed> theFlow = createRoute().flow(system, materializer);
+
+    final ConnectHttp host = ConnectHttp.toHost("localhost", apiPort);
     final CompletionStage<ServerBinding> binding = Http.get(system).bindAndHandle(theFlow, host, materializer);
 
     LOG.info("Ama up");
-    System.in.read();
-
-    binding.thenCompose(ServerBinding::unbind)
-            .whenComplete((unbound, e) -> system.terminate());
   }
 
   private Route createRoute() {
