@@ -1,5 +1,6 @@
 package marnikitta.concierge.kv.storage;
 
+import marnikitta.concierge.kv.session.SessionManager;
 import marnikitta.concierge.model.StorageEntry;
 import marnikitta.concierge.model.session.WrongSessionException;
 import marnikitta.concierge.model.storage.KeyAlreadyExistsException;
@@ -27,12 +28,17 @@ public final class Storage {
     }
   }
 
-  public StorageEntry get(String key) {
+  public StorageEntry get(String key, SessionManager manager, Instant now) {
     final StorageEntry value = storage.get(key);
     if (value == null) {
       throw new NoSuchKeyException(key);
     } else {
-      return storage.get(key);
+      if (value.ephemeral() && manager.get(value.sessionId()).isExpired(now)) {
+        storage.remove(key);
+        throw new NoSuchKeyException(key);
+      } else {
+        return storage.get(key);
+      }
     }
   }
 
@@ -44,8 +50,9 @@ public final class Storage {
                              String value,
                              long expectedVersion,
                              long sessionId,
+                             SessionManager manager,
                              Instant ts) {
-    final StorageEntry entry = get(key);
+    final StorageEntry entry = get(key, manager, ts);
 
     if (entry.sessionId() != sessionId) {
       throw new WrongSessionException(key);
@@ -60,8 +67,10 @@ public final class Storage {
 
   public void delete(String key,
                      long expectedVersion,
-                     long sessionId) {
-    final StorageEntry entry = get(key);
+                     long sessionId,
+                     SessionManager manager,
+                     Instant ts) {
+    final StorageEntry entry = get(key, manager, ts);
     if (entry.sessionId() != sessionId) {
       throw new WrongSessionException(key);
     } else if (entry.version() != expectedVersion) {

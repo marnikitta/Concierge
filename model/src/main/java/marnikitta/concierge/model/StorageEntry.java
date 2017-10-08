@@ -89,10 +89,10 @@ public final class StorageEntry {
   public String toString() {
     return "StorageEntry{" +
             "key='" + key + '\'' +
-            ", value=" + value +
+            ", value='" + value + '\'' +
             ", createdAt=" + createdAt +
             ", updatedAt=" + updatedAt +
-            ", id=" + sessionId +
+            ", sessionId=" + sessionId +
             ", ephemeral=" + ephemeral +
             ", version=" + version +
             '}';

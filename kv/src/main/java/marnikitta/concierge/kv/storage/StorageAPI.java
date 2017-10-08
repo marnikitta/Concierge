@@ -51,7 +51,7 @@ public interface StorageAPI {
     public Object apply(Storage storage, SessionManager manager, Instant ts) {
       new SessionAPI.Heartbeat(sessionId).apply(storage, manager, ts);
 
-      return storage.get(key);
+      return storage.get(key, manager, ts);
     }
 
     @Override
@@ -80,7 +80,7 @@ public interface StorageAPI {
     public Object apply(Storage storage, SessionManager manager, Instant ts) {
       new SessionAPI.Heartbeat(sessionId).apply(storage, manager, ts);
 
-      return storage.update(key, value, expectedVersion, sessionId, ts);
+      return storage.update(key, value, expectedVersion, sessionId, manager, ts);
     }
 
     @Override
@@ -108,7 +108,7 @@ public interface StorageAPI {
     @Override
     public Object apply(Storage storage, SessionManager manager, Instant ts) {
       new SessionAPI.Heartbeat(sessionId).apply(storage, manager, ts);
-      storage.delete(key, expectedVersion, sessionId);
+      storage.delete(key, expectedVersion, sessionId, manager, ts);
       return true;
     }
   }

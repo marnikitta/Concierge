@@ -104,11 +104,12 @@ public final class ConciergeApplication extends AllDirectives {
       }
     });
 
+    final int timeout = 500;
     final Route sessionPath = route(
             post(() ->
                     pathEnd(() ->
                             onComplete(
-                                    ask(kv, new SessionAPI.CreateSession(), 100),
+                                    ask(kv, new SessionAPI.CreateSession(), timeout),
                                     sessionTry -> sessionTry.map(expectedFailureMapper).get()
                             )
                     )
@@ -116,7 +117,7 @@ public final class ConciergeApplication extends AllDirectives {
             patch(() ->
                     path(longSegment(), sessionId ->
                             onComplete(
-                                    ask(kv, new SessionAPI.Heartbeat(sessionId), 100),
+                                    ask(kv, new SessionAPI.Heartbeat(sessionId), timeout),
                                     sessionTry -> sessionTry.map(expectedFailureMapper).get()
                             )
                     )
@@ -133,7 +134,7 @@ public final class ConciergeApplication extends AllDirectives {
                                                     params.get("value"),
                                                     parseLong(params.get("session")),
                                                     parseBoolean(params.getOrDefault("ephemeral", "false"))
-                                            ), 100),
+                                            ), timeout),
                                             sessionTry -> sessionTry.map(expectedFailureMapper).get()
                                     )
                             )
@@ -148,7 +149,7 @@ public final class ConciergeApplication extends AllDirectives {
                                                     parseLong(params.get("version")),
                                                     params.get("value"),
                                                     parseLong(params.get("session"))
-                                            ), 100),
+                                            ), timeout),
                                             sessionTry -> sessionTry.map(expectedFailureMapper).get()
                                     )
                             )
@@ -161,7 +162,7 @@ public final class ConciergeApplication extends AllDirectives {
                                             ask(kv, new StorageAPI.Read(
                                                     key,
                                                     parseLong(session)
-                                            ), 100),
+                                            ), timeout),
                                             sessionTry -> sessionTry.map(expectedFailureMapper).get()
                                     )
                             )
@@ -175,7 +176,7 @@ public final class ConciergeApplication extends AllDirectives {
                                                     key,
                                                     parseLong(params.get("version")),
                                                     parseLong(params.get("session"))
-                                            ), 100),
+                                            ), timeout),
                                             sessionTry -> sessionTry.map(expectedFailureMapper).get()
                                     )
                             )
