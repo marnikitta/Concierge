@@ -25,7 +25,7 @@ public final class SessionManager {
     return sessions.containsKey(sessionId);
   }
 
-  public Session create(long sessionId, Instant createTs) throws SessionExistsException {
+  public Session create(long sessionId, Instant createTs) {
     if (sessions.containsKey(sessionId)) {
       throw new SessionExistsException(sessionId);
     } else {
@@ -35,7 +35,7 @@ public final class SessionManager {
     }
   }
 
-  public Session get(long sessionId) throws NoSuchSessionException {
+  public Session get(long sessionId) {
     if (sessions.containsKey(sessionId)) {
       return sessions.get(sessionId);
     } else {
@@ -43,7 +43,7 @@ public final class SessionManager {
     }
   }
 
-  public void heartbeat(long sessionId, Instant heartbeatTs) throws NoSuchSessionException {
+  public void heartbeat(long sessionId, Instant heartbeatTs) {
     sessions.put(sessionId, get(sessionId).heartbeated(heartbeatTs));
   }
 }

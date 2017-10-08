@@ -2,8 +2,6 @@ package marnikitta.concierge.kv.session;
 
 import marnikitta.concierge.kv.ConciergeAction;
 import marnikitta.concierge.kv.storage.Storage;
-import marnikitta.concierge.model.session.NoSuchSessionException;
-import marnikitta.concierge.model.session.SessionExistsException;
 import marnikitta.concierge.model.session.SessionExpiredException;
 
 import java.time.Instant;
@@ -29,7 +27,7 @@ public interface SessionAPI {
     }
 
     @Override
-    public Object doIt(Storage storage, SessionManager manager, Instant ts) throws SessionExistsException {
+    public Object doIt(Storage storage, SessionManager manager, Instant ts) {
       return manager.create(sessionId, ts);
     }
   }
@@ -53,7 +51,7 @@ public interface SessionAPI {
     }
 
     @Override
-    public Object doIt(Storage storage, SessionManager manager, Instant ts) throws NoSuchSessionException, SessionExpiredException {
+    public Object doIt(Storage storage, SessionManager manager, Instant ts) {
       if (manager.get(sessionId).isExpired(ts)) {
         throw new SessionExpiredException(sessionId);
       }

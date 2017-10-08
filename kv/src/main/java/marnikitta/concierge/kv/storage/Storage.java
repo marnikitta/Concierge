@@ -1,9 +1,9 @@
 package marnikitta.concierge.kv.storage;
 
-import marnikitta.concierge.model.storage.KeyAlreadyExistsException;
-import marnikitta.concierge.model.storage.NoSuchKeyException;
 import marnikitta.concierge.model.StorageEntry;
 import marnikitta.concierge.model.session.WrongSessionException;
+import marnikitta.concierge.model.storage.KeyAlreadyExistsException;
+import marnikitta.concierge.model.storage.NoSuchKeyException;
 import marnikitta.concierge.model.storage.WrongVersionException;
 
 import java.time.Instant;
@@ -16,7 +16,7 @@ public final class Storage {
   public StorageEntry createEphemeral(String key,
                                       String payload,
                                       long sessionId,
-                                      Instant ts) throws KeyAlreadyExistsException {
+                                      Instant ts) {
     if (contains(key)) {
       throw new KeyAlreadyExistsException(key);
     } else {
@@ -26,15 +26,7 @@ public final class Storage {
     }
   }
 
-  public void expireEphemerals(long sessionId) {
-    storage.forEach((key, entry) -> {
-      if (entry.sessionId() == sessionId && entry.ephemeral()) {
-        storage.remove(key);
-      }
-    });
-  }
-
-  public StorageEntry get(String key, long sessionId) throws NoSuchKeyException, WrongSessionException {
+  public StorageEntry get(String key, long sessionId) {
     final StorageEntry value = storage.get(key);
     if (value == null) {
       throw new NoSuchKeyException(key);
@@ -55,7 +47,7 @@ public final class Storage {
   public StorageEntry create(String key,
                              String payload,
                              long sessionId,
-                             Instant ts) throws KeyAlreadyExistsException {
+                             Instant ts) {
     if (contains(key)) {
       throw new KeyAlreadyExistsException(key);
     } else {
@@ -69,7 +61,7 @@ public final class Storage {
                              String value,
                              long expectedVersion,
                              long sessionId,
-                             Instant ts) throws NoSuchKeyException, WrongSessionException, WrongVersionException {
+                             Instant ts) {
     final StorageEntry entry = get(key, sessionId);
     if (expectedVersion != entry.version()) {
       throw new WrongVersionException(key, expectedVersion);
@@ -77,6 +69,18 @@ public final class Storage {
       final StorageEntry updated = entry.updated(value, ts);
       storage.put(key, updated);
       return updated;
+    }
+  }
+
+  public void delete(String key,
+                     long expectedVersion,
+                     long sessionId,
+                     Instant ts) {
+    final StorageEntry entry = get(key, sessionId);
+    if (expectedVersion != entry.version()) {
+      throw new WrongVersionException(key, expectedVersion);
+    } else {
+      storage.remove(key);
     }
   }
 }
