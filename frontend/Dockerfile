@@ -5,10 +5,10 @@ MAINTAINER marnikitta@gmail.com
 COPY target/concierge-frontend-1.0-SNAPSHOT-uber.jar /application.jar
 COPY entrypoint.sh /entrypoint.sh
 
-ENV CONCIERGES: localhost:23456
+ENV CONCIERGES: localhost
 ENV HOST: localhost
-ENV PORT: 23456
-ENV API_PORT: 8080
+
+EXPOSE 23456 8080
 
 ENTRYPOINT ["/entrypoint.sh"]
 

@@ -2,4 +2,4 @@
 
 printenv
 
-java -jar /application.jar "${HOST}:${PORT}" "${API_PORT}" "${CONCIERGES}"
+java -jar /application.jar "${HOST}" "${CONCIERGES}"

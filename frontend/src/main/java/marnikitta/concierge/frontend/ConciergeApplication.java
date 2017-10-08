@@ -8,7 +8,6 @@ import akka.actor.Address;
 import akka.actor.RootActorPath;
 import akka.http.javadsl.ConnectHttp;
 import akka.http.javadsl.Http;
-import akka.http.javadsl.ServerBinding;
 import akka.http.javadsl.marshallers.jackson.Jackson;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.HttpResponse;
@@ -32,82 +31,62 @@ import org.slf4j.LoggerFactory;
 import scala.Function1;
 
 import java.io.IOException;
-import java.net.InetAddress;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.CompletionStage;
 
 import static akka.http.javadsl.server.PathMatchers.longSegment;
 import static akka.pattern.PatternsCS.ask;
 import static java.lang.Boolean.parseBoolean;
 import static java.lang.Long.parseLong;
+import static java.util.Arrays.stream;
+import static java.util.stream.Collectors.toSet;
 import static scala.compat.java8.JFunction.func;
 
 public final class ConciergeApplication extends AllDirectives {
-  private final static Logger LOG = LoggerFactory.getLogger(ConciergeApplication.class);
+  private static final int ACTOR_PORT = 23456;
+  private static final int CLIENT_PORT = 8080;
+
+  private static final Logger LOG = LoggerFactory.getLogger(ConciergeApplication.class);
   private final ObjectMapper mapper = new ObjectMapper()
           .registerModule(new JavaTimeModule());
 
   private final Cluster cluster;
-
   private final String hostname;
-  private final int port;
-  private final int apiPort;
 
   private ActorRef kv;
 
-  public ConciergeApplication(String hostname,
-                              int port,
-                              int apiPort,
-                              Cluster cluster) {
-    this.cluster = cluster;
-    this.port = port;
-    this.apiPort = apiPort;
+  public ConciergeApplication(String hostname, Cluster cluster) {
     this.hostname = hostname;
+    this.cluster = cluster;
   }
 
   public static void main(String... args) throws IOException {
     LOG.info("Args: {}", Arrays.toString(args));
-    final String localHost = args[0].split(":")[0];
-    final int localPort = Integer.parseInt(args[0].split(":")[1]);
-    final int apiPort = Integer.parseInt(args[1]);
-    final String cluster = args[2];
 
-    final Set<ActorPath> clusterPaths = new HashSet<>();
+    final String hostname = args[0];
 
-    for (String arg : cluster.split(",")) {
-      final String[] split = arg.split(":");
-      final InetAddress host = InetAddress.getByName(split[0]);
-      final int port = Integer.parseInt(split[1]);
+    final Set<ActorPath> cluster = stream(args[1].split(","))
+            .map(host -> {
+              final Address actorSystemAddress = new Address("akka.tcp", "concierge", host, ACTOR_PORT);
+              return RootActorPath.apply(actorSystemAddress, "/").child("user");
+            }).collect(toSet());
 
-      final Address actorSystemAddress = new Address("akka.tcp", "concierge", host.getHostName(), port);
-      clusterPaths.add(RootActorPath.apply(actorSystemAddress, "/").child("user"));
-    }
-
-    new ConciergeApplication(
-            localHost,
-            localPort,
-            apiPort,
-            new Cluster(clusterPaths)
-    ).run();
+    new ConciergeApplication(hostname, new Cluster(cluster)).run();
   }
 
-  public void run() throws IOException {
-
-    final Config config = ConfigFactory.parseString("akka.remote.netty.tcp.port=" + port)
-            .withFallback(ConfigFactory.parseString("akka.remote.netty.tcp.hostname=" + hostname))
+  public void run() {
+    final Config config = ConfigFactory.parseString("akka.remote.netty.tcp.hostname=" + hostname)
             .withFallback(ConfigFactory.load("remote"));
 
-    final ActorSystem system = ActorSystem.create("concierge", config.withFallback(ConfigFactory.load("remote")));
+    final ActorSystem system = ActorSystem.create("concierge", config);
     kv = system.actorOf(LinearizableStorage.props(new Cluster(cluster.paths(), "kv")), "kv");
 
     final ActorMaterializer materializer = ActorMaterializer.create(system);
 
     final Flow<HttpRequest, HttpResponse, NotUsed> theFlow = createRoute().flow(system, materializer);
 
-    final ConnectHttp host = ConnectHttp.toHost("localhost", apiPort);
-    final CompletionStage<ServerBinding> binding = Http.get(system).bindAndHandle(theFlow, host, materializer);
+    final ConnectHttp host = ConnectHttp.toHost(hostname, CLIENT_PORT);
+    Http.get(system).bindAndHandle(theFlow, host, materializer);
 
     LOG.info("Ama up");
   }

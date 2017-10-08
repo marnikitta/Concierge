@@ -7,25 +7,20 @@ services:
     ports:
       - 8080:8080
     environment:
-      - CONCIERGES=concierge-1:23456,concierge-2:23456,concierge-3:23456
+      - CONCIERGES=concierge-1,concierge-2,concierge-3
       - HOST=concierge-1
-      - PORT=23456
-      - API_PORT=8080
 
   concierge-2:
     container_name: concierge-2
     image: marnikita/concierge
     environment:
-      - CONCIERGES=concierge-1:23456,concierge-2:23456,concierge-3:23456
+      - CONCIERGES=concierge-1,concierge-2,concierge-3
       - HOST=concierge-2
-      - PORT=23456
-      - API_PORT=8080
 
   concierge-3:
     container_name: concierge-3
     image: marnikita/concierge
     environment:
-      - CONCIERGES=concierge-1:23456,concierge-2:23456,concierge-3:23456
+      - CONCIERGES=concierge-1,concierge-2,concierge-3
       - HOST=concierge-3
-      - PORT=23456
-      - API_PORT=8080
+
