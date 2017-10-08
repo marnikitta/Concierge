@@ -45,14 +45,16 @@ public final class Concierge implements AutoCloseable {
     if (response.isSuccessful() && response.body() != null) {
       session = response.body();
     } else {
-      throw new RuntimeException(response.errorBody().string());
+      throw new IOException(response.errorBody().string());
     }
 
     pinger = new Thread(() -> {
       while (true) {
         try {
           final Response<Session> execute = sessionClient.heartbeat(session.id()).execute();
-          System.out.println(execute);
+          if (!execute.isSuccessful()) {
+            return;
+          }
           TimeUnit.MILLISECONDS.sleep(session.heartbeatDelay().toMillis() / 2);
         } catch (SessionExpiredException | NoSuchSessionException | InterruptedException | IOException ignored) {
           return;
