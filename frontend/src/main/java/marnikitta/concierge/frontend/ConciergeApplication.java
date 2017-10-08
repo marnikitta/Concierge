@@ -167,7 +167,22 @@ public final class ConciergeApplication extends AllDirectives {
                                     )
                             )
                     )
+            ),
+            delete(() ->
+                    path(key ->
+                            parameterMap(params ->
+                                    onComplete(
+                                            ask(kv, new StorageAPI.Delete(
+                                                    key,
+                                                    parseLong(params.get("version")),
+                                                    parseLong(params.get("session"))
+                                            ), 100),
+                                            sessionTry -> sessionTry.map(expectedFailureMapper).get()
+                                    )
+                            )
+                    )
             )
+
     );
 
     return route(
