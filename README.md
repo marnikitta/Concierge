@@ -16,6 +16,5 @@ distributed systems concepts
 7.  __[ ]__ Wrap kv-storage with REST HTTP server
 8.  __[ ]__ Generate simple REST client (Retrofit?)
 9.  __[ ]__ Docker container
-10. __[ ]__ Basic REPL client as proof of concept
-11. __[ ]__ Transform fail-stop model to fail-restore using log-deliver mechanism
-12. __[ ]__ Replace kyro serialization with protobuf
+10. __[ ]__ Transform fail-stop model to fail-restore using log-deliver mechanism
+11. __[ ]__ Replace kyro serialization with protobuf
