@@ -2,9 +2,11 @@ package marnikitta.concierge.client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import marnikitta.concierge.model.ConciergeException;
 import marnikitta.concierge.model.Session;
 import marnikitta.concierge.model.StorageEntry;
-import org.jetbrains.annotations.Nullable;
+import marnikitta.concierge.model.session.NoSuchSessionException;
+import marnikitta.concierge.model.session.SessionExpiredException;
 import retrofit2.Call;
 import retrofit2.Response;
 import retrofit2.Retrofit;
@@ -18,100 +20,143 @@ import retrofit2.http.Path;
 import retrofit2.http.Query;
 
 import java.io.IOException;
-import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 public final class Concierge implements AutoCloseable {
-  private final ObjectMapper mapper = new ObjectMapper()
-          .registerModule(new JavaTimeModule());
+  public static final int I_AM_TEAPOT = 418;
+  private final ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule());
 
-  private final Retrofit retrofit = new Retrofit.Builder()
-          .baseUrl("http://localhost:8080")
-          .addConverterFactory(JacksonConverterFactory.create(mapper))
-          .build();
+  private final Thread pinger;
+  private final Session session;
 
-  private final StorageClient storageClient = retrofit.create(StorageClient.class);
-  private final SessionClient sessionClient = retrofit.create(SessionClient.class);
+  private final SessionClient sessionClient;
+  private final StorageClient storageClient;
 
-  @Nullable
-  private Thread pinger;
+  public Concierge(String host, int port) throws IOException {
+    final Retrofit retrofit = new Retrofit.Builder()
+            .addConverterFactory(JacksonConverterFactory.create(mapper))
+            .baseUrl("http://" + host + ':' + port)
+            .build();
 
-  @Nullable
-  private volatile Session session = null;
+    sessionClient = retrofit.create(SessionClient.class);
+    storageClient = retrofit.create(StorageClient.class);
 
-  public long createSession() throws IOException {
-    final Response<Session> execute = sessionClient.createSession(Math.abs(new Random().nextLong())).execute();
-    session = execute.body();
-    System.out.println(execute);
-
-    if (pinger != null) {
-      pinger.interrupt();
-      try {
-        pinger.join();
-      } catch (InterruptedException e) {
-        throw new RuntimeException(e);
-      }
+    final Response<Session> response = sessionClient.createSession().execute();
+    if (response.isSuccessful() && response.body() != null) {
+      session = response.body();
+    } else {
+      throw new RuntimeException(response.errorBody().string());
     }
 
     pinger = new Thread(() -> {
       while (true) {
         try {
-          sessionClient.heartbeat(session.id()).execute();
+          final Response<Session> execute = sessionClient.heartbeat(session.id()).execute();
+          System.out.println(execute);
           TimeUnit.MILLISECONDS.sleep(session.heartbeatDelay().toMillis() / 2);
-        } catch (InterruptedException ignored) {
-          return;
-        } catch (IOException e) {
+        } catch (SessionExpiredException | NoSuchSessionException | InterruptedException | IOException ignored) {
           return;
         }
       }
     });
-    pinger.start();
 
-    return session.id();
+    pinger.start();
+  }
+
+  public StorageEntry create(String key, String value) throws IOException {
+    final Response<StorageEntry> execute = storageClient.create(key, session.id(), value, false).execute();
+    return vauleOrException(execute);
+  }
+
+  public StorageEntry createEphemeral(String key, String value) throws IOException {
+    final Response<StorageEntry> execute = storageClient.create(key, session.id(), value, true).execute();
+    return vauleOrException(execute);
+  }
+
+  public StorageEntry get(String key) throws IOException {
+    final Response<StorageEntry> execute = storageClient.get(key, session.id()).execute();
+    return vauleOrException(execute);
+  }
+
+  public StorageEntry update(String key, String value, long version) throws IOException {
+    final Response<StorageEntry> execute = storageClient.update(key, session.id(), value, version).execute();
+    return vauleOrException(execute);
+  }
+
+  public StorageEntry delete(String key, long version) throws IOException {
+    final Response<StorageEntry> execute = storageClient.delete(key, session.id(), version).execute();
+    return vauleOrException(execute);
+  }
+
+  private <T> T vauleOrException(Response<T> execute) throws IOException {
+    if (execute.isSuccessful()) {
+      return execute.body();
+    } else if (execute.code() == I_AM_TEAPOT) {
+      throw mapper.readValue(
+              execute.errorBody().bytes(),
+              ConciergeException.class
+      );
+    } else {
+      throw new IOException(execute.errorBody().string());
+    }
   }
 
   @Override
   public void close() throws Exception {
-    if (pinger != null) {
-      pinger.interrupt();
-      pinger.join();
-    }
+    pinger.interrupt();
+    pinger.join();
   }
 
   public static void main(String... args) throws Exception {
-    try (Concierge concierge = new Concierge()) {
-      concierge.createSession();
-      TimeUnit.HOURS.sleep(1);
+    try (Concierge concierge = new Concierge("localhost", 8080)) {
+      StorageEntry prev = concierge.create("aba", "caba");
+
+      System.out.println(prev);
+
+      for (int i = 0; i < 10; ++i) {
+        TimeUnit.SECONDS.sleep(5);
+        prev = concierge.update(
+                prev.key(),
+                prev.value() + i,
+                prev.version()
+        );
+
+        System.out.println(prev);
+      }
     }
   }
 }
 
 interface StorageClient {
-
-  @PUT("{sessionId}/{key}")
-  Call<StorageEntry> create(@Path("sessionId") long sessionId,
-                            @Path("key") String key,
+  @PUT("keys/{key}")
+  Call<StorageEntry> create(@Path("key") String key,
+                            @Query("session") long session,
                             @Query("value") String value,
                             @Query("ephemeral") boolean ephemeral);
 
-  @GET("{sessionId}/{key}")
-  Call<StorageEntry> get(@Path("sessionId") long sessionId, @Path("key") String key);
+  @GET("keys/{key}")
+  Call<StorageEntry> get(@Path("key") String key,
+                         @Query("session") long session);
 
-  @POST("{sessionId}/{key}")
-  Call<StorageEntry> update(@Path("sessionId") long sessionId,
-                            @Path("key") String key,
+  @PATCH("keys/{key}")
+  Call<StorageEntry> update(@Path("key") String key,
+                            @Query("session") long session,
                             @Query("value") String value,
-                            @Query("expectedVersion") long version);
+                            @Query("version") long version);
 
-  @DELETE("{sessionId}/{key}")
-  Call<StorageEntry> delete(@Path("sessionId") long sessionId,
-                            @Path("key") String key);
+  @DELETE("keys/{key}")
+  Call<StorageEntry> delete(@Path("key") String key,
+                            @Query("session") long session,
+                            @Query("version") long version);
 }
 
 interface SessionClient {
-  @PUT("{sessionId}")
-  Call<Session> createSession(@Path("sessionId") long id);
+  @POST("sessions")
+  Call<Session> createSession();
 
-  @PATCH("{sessionId}")
-  Call<Session> heartbeat(@Path("sessionId") long id);
+  @PATCH("sessions/{session}")
+  Call<Session> heartbeat(@Path("session") long id);
+
+  @DELETE("sessions/{session}")
+  Call<Void> close(@Path("session") long session);
 }
