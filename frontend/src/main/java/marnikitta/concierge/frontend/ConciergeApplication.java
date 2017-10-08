@@ -25,7 +25,7 @@ import marnikitta.concierge.common.Cluster;
 import marnikitta.concierge.kv.LinearizableStorage;
 import marnikitta.concierge.kv.session.SessionAPI;
 import marnikitta.concierge.kv.storage.StorageAPI;
-import marnikitta.concierge.model.ConciergeActionException;
+import marnikitta.concierge.model.ConciergeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Function1;
@@ -94,7 +94,7 @@ public final class ConciergeApplication extends AllDirectives {
 
   private Route createRoute() {
     final Function1<Object, RouteAdapter> expectedFailureMapper = func(response -> {
-      if (response instanceof ConciergeActionException) {
+      if (response instanceof ConciergeException) {
         return complete(
                 StatusCodes.IM_A_TEAPOT,
                 response,

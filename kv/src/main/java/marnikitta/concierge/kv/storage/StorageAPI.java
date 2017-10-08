@@ -1,7 +1,7 @@
 package marnikitta.concierge.kv.storage;
 
 import marnikitta.concierge.kv.ConciergeAction;
-import marnikitta.concierge.model.ConciergeActionException;
+import marnikitta.concierge.model.ConciergeException;
 import marnikitta.concierge.kv.session.SessionAPI;
 import marnikitta.concierge.kv.session.SessionManager;
 
@@ -38,7 +38,7 @@ public interface StorageAPI {
     }
 
     @Override
-    public Object doIt(Storage storage, SessionManager manager, Instant ts) throws ConciergeActionException {
+    public Object doIt(Storage storage, SessionManager manager, Instant ts) throws ConciergeException {
       new SessionAPI.Heartbeat(sessionId).doIt(storage, manager, ts);
 
       if (ephemeral) {
@@ -70,7 +70,7 @@ public interface StorageAPI {
     }
 
     @Override
-    public Object doIt(Storage storage, SessionManager manager, Instant ts) throws ConciergeActionException {
+    public Object doIt(Storage storage, SessionManager manager, Instant ts) throws ConciergeException {
       new SessionAPI.Heartbeat(sessionId).doIt(storage, manager, ts);
 
       return storage.get(key, sessionId);
@@ -91,7 +91,7 @@ public interface StorageAPI {
     }
 
     @Override
-    public Object doIt(Storage storage, SessionManager manager, Instant ts) throws ConciergeActionException {
+    public Object doIt(Storage storage, SessionManager manager, Instant ts) throws ConciergeException {
       new SessionAPI.Heartbeat(sessionId).doIt(storage, manager, ts);
 
       return storage.update(key, value, expectedVersion, sessionId, ts);

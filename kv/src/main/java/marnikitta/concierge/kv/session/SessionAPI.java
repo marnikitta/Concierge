@@ -14,7 +14,7 @@ public interface SessionAPI {
     private final long sessionId;
 
     public CreateSession() {
-      this.sessionId = ThreadLocalRandom.current().nextLong();
+      this.sessionId = Math.abs(ThreadLocalRandom.current().nextLong());
     }
 
     @Override

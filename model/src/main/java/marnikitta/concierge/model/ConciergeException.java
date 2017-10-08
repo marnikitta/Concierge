@@ -4,13 +4,13 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-@JsonIgnoreProperties({"cause", "stackTrack", "localizedMessage", "suppressed"})
-public class ConciergeActionException extends Exception {
+@JsonIgnoreProperties({"cause", "stackTrace", "localizedMessage", "suppressed"})
+public class ConciergeException extends RuntimeException {
   private final int code;
 
   @JsonCreator
-  public ConciergeActionException(@JsonProperty("message") String message,
-                                  @JsonProperty("code") int code) {
+  public ConciergeException(@JsonProperty("message") String message,
+                            @JsonProperty("code") int code) {
     super(message);
     this.code = code;
   }

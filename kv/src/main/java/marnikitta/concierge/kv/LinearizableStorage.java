@@ -11,7 +11,7 @@ import marnikitta.concierge.atomic.AtomicBroadcastAPI;
 import marnikitta.concierge.common.Cluster;
 import marnikitta.concierge.kv.session.SessionManager;
 import marnikitta.concierge.kv.storage.Storage;
-import marnikitta.concierge.model.ConciergeActionException;
+import marnikitta.concierge.model.ConciergeException;
 import org.jetbrains.annotations.Nullable;
 
 import java.time.Instant;
@@ -62,7 +62,7 @@ public final class LinearizableStorage extends AbstractActor {
         inFlight.get(entry.broadcastUUID()).tell(result, self());
         inFlight.remove(entry.broadcastUUID());
       }
-    } catch (ConciergeActionException e) {
+    } catch (ConciergeException e) {
       LOG.info("ConciergeException: {}", e);
       if (inFlight.containsKey(entry.broadcastUUID())) {
         inFlight.get(entry.broadcastUUID()).tell(e, self());
@@ -105,6 +105,15 @@ public final class LinearizableStorage extends AbstractActor {
     @Override
     public int hashCode() {
       return Objects.hash(broadcastUUID);
+    }
+
+    @Override
+    public String toString() {
+      return "BroadcastEntry{" +
+              "broadcastedAt=" + broadcastedAt +
+              ", action=" + action +
+              ", broadcastUUID=" + broadcastUUID +
+              '}';
     }
   }
 }

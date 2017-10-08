@@ -66,8 +66,8 @@ public final class StorageEntry {
     return createdAt;
   }
 
-  @JsonProperty("last_updated_at")
-  public Instant lastUpdatedAt() {
+  @JsonProperty("updated_at")
+  public Instant updateAt() {
     return updatedAt;
   }
 
