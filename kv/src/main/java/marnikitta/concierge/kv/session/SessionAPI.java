@@ -18,12 +18,8 @@ public interface SessionAPI {
     @Override
     public String toString() {
       return "CreateSession{" +
-              "id=" + sessionId() +
+              "id=" + sessionId +
               '}';
-    }
-
-    public long sessionId() {
-      return sessionId;
     }
 
     @Override
@@ -39,22 +35,15 @@ public interface SessionAPI {
       this.sessionId = sessionId;
     }
 
-    public long sessionId() {
-      return sessionId;
-    }
-
     @Override
     public String toString() {
       return "Heartbeat{" +
-              "id=" + sessionId() +
+              "id=" + sessionId +
               '}';
     }
 
     @Override
     public Object apply(Storage storage, SessionManager manager, Instant ts) {
-      if (manager.get(sessionId).isExpired(ts)) {
-        throw new SessionExpiredException(sessionId);
-      }
       manager.heartbeat(sessionId, ts);
       return manager.get(sessionId);
     }

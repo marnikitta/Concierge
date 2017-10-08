@@ -5,6 +5,7 @@ import gnu.trove.map.hash.TLongObjectHashMap;
 import marnikitta.concierge.model.session.NoSuchSessionException;
 import marnikitta.concierge.model.Session;
 import marnikitta.concierge.model.session.SessionExistsException;
+import marnikitta.concierge.model.session.SessionExpiredException;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -19,10 +20,6 @@ public final class SessionManager {
 
   public SessionManager(Duration heartbeatDelay) {
     this.heartbeatDelay = heartbeatDelay;
-  }
-
-  public boolean contains(long sessionId) {
-    return sessions.containsKey(sessionId);
   }
 
   public Session create(long sessionId, Instant createTs) {
@@ -44,6 +41,9 @@ public final class SessionManager {
   }
 
   public void heartbeat(long sessionId, Instant heartbeatTs) {
+    if (get(sessionId).isExpired(heartbeatTs)) {
+      throw new SessionExpiredException(sessionId);
+    }
     sessions.put(sessionId, get(sessionId).heartbeated(heartbeatTs));
   }
 }

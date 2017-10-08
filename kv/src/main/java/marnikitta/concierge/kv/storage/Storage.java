@@ -13,30 +13,26 @@ import java.util.Map;
 public final class Storage {
   private final Map<String, StorageEntry> storage = new HashMap<>();
 
-  public StorageEntry createEphemeral(String key,
-                                      String payload,
-                                      long sessionId,
-                                      Instant ts) {
+  public StorageEntry create(String key,
+                             String payload,
+                             long sessionId,
+                             Instant ts,
+                             boolean ephemeral) {
     if (contains(key)) {
       throw new KeyAlreadyExistsException(key);
     } else {
-      final StorageEntry entry = new StorageEntry(key, payload, sessionId, true, ts);
+      final StorageEntry entry = new StorageEntry(key, payload, sessionId, ephemeral, ts);
       storage.put(key, entry);
       return entry;
     }
   }
 
-  public StorageEntry get(String key, long sessionId) {
+  public StorageEntry get(String key) {
     final StorageEntry value = storage.get(key);
     if (value == null) {
       throw new NoSuchKeyException(key);
     } else {
-      final StorageEntry entry = storage.get(key);
-      if (entry.ephemeral() && entry.sessionId() != sessionId) {
-        throw new WrongSessionException(key);
-      } else {
-        return entry;
-      }
+      return storage.get(key);
     }
   }
 
@@ -44,26 +40,16 @@ public final class Storage {
     return storage.containsKey(key);
   }
 
-  public StorageEntry create(String key,
-                             String payload,
-                             long sessionId,
-                             Instant ts) {
-    if (contains(key)) {
-      throw new KeyAlreadyExistsException(key);
-    } else {
-      final StorageEntry entry = new StorageEntry(key, payload, sessionId, false, ts);
-      storage.put(key, entry);
-      return entry;
-    }
-  }
-
   public StorageEntry update(String key,
                              String value,
                              long expectedVersion,
                              long sessionId,
                              Instant ts) {
-    final StorageEntry entry = get(key, sessionId);
-    if (expectedVersion != entry.version()) {
+    final StorageEntry entry = get(key);
+
+    if (entry.sessionId() != sessionId) {
+      throw new WrongSessionException(key);
+    } else if (entry.version() != expectedVersion) {
       throw new WrongVersionException(key, expectedVersion);
     } else {
       final StorageEntry updated = entry.updated(value, ts);
@@ -74,10 +60,11 @@ public final class Storage {
 
   public void delete(String key,
                      long expectedVersion,
-                     long sessionId,
-                     Instant ts) {
-    final StorageEntry entry = get(key, sessionId);
-    if (expectedVersion != entry.version()) {
+                     long sessionId) {
+    final StorageEntry entry = get(key);
+    if (entry.sessionId() != sessionId) {
+      throw new WrongSessionException(key);
+    } else if (entry.version() != expectedVersion) {
       throw new WrongVersionException(key, expectedVersion);
     } else {
       storage.remove(key);

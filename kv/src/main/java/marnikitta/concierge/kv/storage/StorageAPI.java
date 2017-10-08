@@ -20,31 +20,21 @@ public interface StorageAPI {
       this.ephemeral = ephemeral;
     }
 
-    public boolean ephemeral() {
-      return ephemeral;
-    }
-
-    public String key() {
-      return key;
-    }
-
-    public String value() {
-      return value;
-    }
-
-    public long sessionId() {
-      return sessionId;
-    }
-
     @Override
     public Object apply(Storage storage, SessionManager manager, Instant ts) {
       new SessionAPI.Heartbeat(sessionId).apply(storage, manager, ts);
 
-      if (ephemeral) {
-        return storage.createEphemeral(key, value, sessionId, ts);
-      } else {
-        return storage.create(key, value, sessionId, ts);
-      }
+      return storage.create(key, value, sessionId, ts, ephemeral);
+    }
+
+    @Override
+    public String toString() {
+      return "Create{" +
+              "key='" + key + '\'' +
+              ", value='" + value + '\'' +
+              ", sessionId=" + sessionId +
+              ", ephemeral=" + ephemeral +
+              '}';
     }
   }
 
@@ -57,22 +47,19 @@ public interface StorageAPI {
       this.sessionId = sessionId;
     }
 
-    public String key() {
-      return key;
+    @Override
+    public Object apply(Storage storage, SessionManager manager, Instant ts) {
+      new SessionAPI.Heartbeat(sessionId).apply(storage, manager, ts);
+
+      return storage.get(key);
     }
 
     @Override
     public String toString() {
       return "Read{" +
               "key='" + key + '\'' +
+              ", sessionId=" + sessionId +
               '}';
-    }
-
-    @Override
-    public Object apply(Storage storage, SessionManager manager, Instant ts) {
-      new SessionAPI.Heartbeat(sessionId).apply(storage, manager, ts);
-
-      return storage.get(key, sessionId);
     }
   }
 
@@ -95,6 +82,16 @@ public interface StorageAPI {
 
       return storage.update(key, value, expectedVersion, sessionId, ts);
     }
+
+    @Override
+    public String toString() {
+      return "Update{" +
+              "key='" + key + '\'' +
+              ", value='" + value + '\'' +
+              ", sessionId=" + sessionId +
+              ", expectedVersion=" + expectedVersion +
+              '}';
+    }
   }
 
   final class Delete implements ConciergeAction {
@@ -111,7 +108,7 @@ public interface StorageAPI {
     @Override
     public Object apply(Storage storage, SessionManager manager, Instant ts) {
       new SessionAPI.Heartbeat(sessionId).apply(storage, manager, ts);
-      storage.delete(key, expectedVersion, sessionId, ts);
+      storage.delete(key, expectedVersion, sessionId);
       return true;
     }
   }

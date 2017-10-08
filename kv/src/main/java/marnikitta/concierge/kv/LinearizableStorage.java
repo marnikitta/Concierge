@@ -22,6 +22,7 @@ import java.util.UUID;
 
 public final class LinearizableStorage extends AbstractActor {
   private final LoggingAdapter LOG = Logging.getLogger(this);
+
   private final ActorRef atomicBroadcast;
   private final Map<UUID, ActorRef> inFlight = new HashMap<>();
 
