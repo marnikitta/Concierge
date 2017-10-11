@@ -7,20 +7,19 @@ import marnikitta.concierge.model.Session;
 import marnikitta.concierge.model.StorageEntry;
 import marnikitta.concierge.model.session.NoSuchSessionException;
 import marnikitta.concierge.model.session.SessionExpiredException;
-import retrofit2.Call;
+import okhttp3.HttpUrl;
+import okhttp3.Interceptor;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
 import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.jackson.JacksonConverterFactory;
-import retrofit2.http.DELETE;
-import retrofit2.http.GET;
-import retrofit2.http.PATCH;
-import retrofit2.http.POST;
-import retrofit2.http.PUT;
-import retrofit2.http.Path;
-import retrofit2.http.Query;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
+
+import static java.util.Collections.unmodifiableList;
 
 public final class Concierge implements AutoCloseable {
   public static final int I_AM_TEAPOT = 418;
@@ -32,10 +31,15 @@ public final class Concierge implements AutoCloseable {
   private final SessionClient sessionClient;
   private final StorageClient storageClient;
 
-  public Concierge(String host, int port) throws IOException {
+  public Concierge(List<String> hosts) throws IOException {
+    final OkHttpClient client = new OkHttpClient.Builder()
+            .addInterceptor(new HostSelectorInterceptor(hosts))
+            .build();
+
     final Retrofit retrofit = new Retrofit.Builder()
             .addConverterFactory(JacksonConverterFactory.create(mapper))
-            .baseUrl("http://" + host + ':' + port)
+            .baseUrl("http://" + hosts.get(0) + "/")
+            .callFactory(client)
             .build();
 
     sessionClient = retrofit.create(SessionClient.class);
@@ -52,7 +56,7 @@ public final class Concierge implements AutoCloseable {
       while (true) {
         try {
           sessionClient.heartbeat(session.id()).execute();
-          TimeUnit.MILLISECONDS.sleep(session.heartbeatDelay().toMillis() / 2);
+          TimeUnit.MILLISECONDS.sleep(session.heartbeatDelay().toMillis() / 4);
         } catch (SessionExpiredException | InterruptedException | NoSuchSessionException e) {
           return;
         } catch (IOException ignored) {
@@ -84,8 +88,8 @@ public final class Concierge implements AutoCloseable {
     return vauleOrException(execute);
   }
 
-  public StorageEntry delete(String key, long version) throws IOException {
-    final Response<StorageEntry> execute = storageClient.delete(key, session.id(), version).execute();
+  public boolean delete(String key, long version) throws IOException {
+    final Response<Boolean> execute = storageClient.delete(key, session.id(), version).execute();
     return vauleOrException(execute);
   }
 
@@ -108,52 +112,38 @@ public final class Concierge implements AutoCloseable {
     pinger.join();
   }
 
-  public static void main(String... args) throws Exception {
-    try (Concierge concierge = new Concierge("localhost", 8080)) {
-      StorageEntry prev = concierge.create("aba", "caba");
+  private static final class HostSelectorInterceptor implements Interceptor {
+    private final List<String> hosts;
 
-      System.out.println(prev);
+    private volatile int currentHostId = 0;
 
-      for (int i = 0; i < 10000; ++i) {
-        prev = concierge.update(
-                prev.key(),
-                String.valueOf(i),
-                prev.version()
-        );
+    public HostSelectorInterceptor(List<String> hosts) {
+      this.hosts = unmodifiableList(hosts);
+    }
 
-        System.out.println(prev);
+    @Override
+    public okhttp3.Response intercept(Chain chain) throws IOException {
+      final String[] currentString = hosts.get(currentHostId).split(":");
+      final String currentHost = currentString[0];
+      final int currentPort = Integer.parseInt(currentString[1]);
+
+      final HttpUrl url = chain.request().url().newBuilder().host(currentHost).port(currentPort).build();
+      final Request request = chain.request().newBuilder().url(url).build();
+
+      try {
+        final okhttp3.Response response = chain.proceed(request);
+        if (response.code() >= 500 && response.code() < 600) {
+          changeHost();
+        }
+        return response;
+      } catch (IOException e) {
+        changeHost();
+        throw e;
       }
     }
-  }
 
-  private interface StorageClient {
-    @PUT("keys/{key}")
-    Call<StorageEntry> create(@Path("key") String key,
-                              @Query("session") long session,
-                              @Query("value") String value,
-                              @Query("ephemeral") boolean ephemeral);
-
-    @GET("keys/{key}")
-    Call<StorageEntry> get(@Path("key") String key,
-                           @Query("session") long session);
-
-    @PATCH("keys/{key}")
-    Call<StorageEntry> update(@Path("key") String key,
-                              @Query("session") long session,
-                              @Query("value") String value,
-                              @Query("version") long version);
-
-    @DELETE("keys/{key}")
-    Call<StorageEntry> delete(@Path("key") String key,
-                              @Query("session") long session,
-                              @Query("version") long version);
-  }
-
-  private interface SessionClient {
-    @POST("sessions")
-    Call<Session> createSession();
-
-    @PATCH("sessions/{session}")
-    Call<Session> heartbeat(@Path("session") long id);
+    private void changeHost() {
+      currentHostId = (currentHostId + 1) % hosts.size();
+    }
   }
 }

@@ -1,0 +1,9 @@
+{
+  "hostname": "localhost",
+  "actor_port": 23456,
+  "client_port": 8080,
+  "heartbeat": 3000,
+  "concierges": [
+    "localhost:23456"
+  ]
+}
