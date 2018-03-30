@@ -5,27 +5,43 @@
 Concierge is a pet project created to obtain deeper understanding of 
 distributed systems concepts
 
-## Roadmap
+#### Roadmap v1.0
 
-1.  __[✔]__ Implement _eventually strong_ failure detector. Timeout-based
-2.  __[✔]__ Implement Ω leader elector. Monarchy (highest non-suspected pid wins)
-3.  __[✔]__ Implement Paxos consensus algorithm
-4.  __[✔]__ Build atomic broadcast on top of the consensus layer
-5.  __[✔]__ Implement KV-storage using state-machine replication
-6.  __[✔]__ Add sessions, ephemeral nodes...
-7.  __[✔]__ Wrap kv-storage with REST HTTP server
-8.  __[✔]__ Generate simple REST client (Retrofit?)
-9.  __[✔]__ Docker container
-10. __[ ]__ Transform fail-stop model to fail-restore using log-deliver mechanism
-11. __[ ]__ Replace kyro serialization with protobuf
+1.  [x] Implement _eventually strong_ failure detector. Timeout-based
+2.  [x] Implement Ω leader elector. Monarchy (highest non-suspected pid wins)
+3.  [x] Implement Paxos consensus algorithm
+4.  [x] Build atomic broadcast on top of the consensus layer
+5.  [x] Implement KV-storage using state-machine replication
+6.  [x] Add sessions, ephemeral nodes...
+7.  [x] Wrap kv-storage with REST HTTP server
+8.  [x] Generate simple REST client (Retrofit?)
+9.  [x] Docker container
+10. [ ] Transform fail-stop model to fail-restore using log-deliver mechanism
+11. [ ] Replace kyro serialization with protobuf
 
-## Running the tests
+#### Roadmap v1.1
+
+1. [ ] Clean codebase (Fix tests, refactor something, use default ports)
+2. [ ] Replace ping method with native sessions, e.g., TCP connection or HTTP sessions
+3. [ ] Clean API
+4. [ ] Make state persistent. a.k.a. _Transform fail-stop model to fail-restore using log-deliver mechanism_
+5. [ ] Add table schema, Bigtable like
+6. [ ] Add SQL support, Megastore like
+7. [ ] Add ACID transactions, Spanner like
+
+#### Engineering fun
+
+1. [ ] Create own actors library w/ networking (UDP)
+2. [ ] Replace Kryo with ad-hoc serialization
+3. [ ] Implement SSTables local storage and replace LevelDB
+
+#### Running the tests
 
 ```bash
 mvn test
 ```
 
-## Deployment
+#### Deployment
 
 ```yaml
 version: '3'
@@ -66,10 +82,10 @@ services:
 
 ```
 
-## Built With
+#### Built With
 
 - [Maven](https://maven.apache.org/) - Dependency Management
 
-## License
+#### License
 
 This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details
