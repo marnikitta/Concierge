@@ -9,12 +9,3 @@ install: true
 
 script:
   - mvn clean install -fae --errors --batch-mode
-
-before_install:
-  - docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD";
-
-after_success:
-  - if [ "$TRAVIS_BRANCH" == "master" ]; then
-    docker build -t marnikita/concierge frontend;
-    docker push marnikita/concierge;
-    fi
