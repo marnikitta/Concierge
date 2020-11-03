@@ -26,7 +26,7 @@
         <maven-compiler-plugin.version>3.6.1</maven-compiler-plugin.version>
         <jool.version>0.9.12</jool.version>
         <jackson.version>2.9.1</jackson.version>
-        <retrofit.version>2.3.0</retrofit.version>
+        <retrofit.version>2.9.0</retrofit.version>
     </properties>
 
     <dependencyManagement>
